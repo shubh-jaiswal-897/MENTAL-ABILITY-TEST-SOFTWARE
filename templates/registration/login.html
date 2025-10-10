@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Login - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+  <h2>Student Login</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username" class="form-label">Username</label>
+          <input type="text" name="username" autofocus required id="id_username" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="id_password" class="form-label">Password</label>
+          <input type="password" name="password" required id="id_password" class="form-control">
+        </div>
+  <button class="btn btn-primary" type="submit">Student Login</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

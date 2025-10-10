@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Result - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-body">
+      <h2 class="card-title">{{ question.text }}</h2>
+      {% if correct %}
+      <div class="alert alert-success">Correct! 🎉</div>
+      {% else %}
+      <div class="alert alert-danger">Incorrect. Try another question.</div>
+      {% endif %}
+      <a href="{% url 'quiz:index' %}" class="btn btn-secondary">Back to questions</a>
+    </div>
+  </div>
+{% endblock %}

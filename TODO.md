@@ -1,0 +1,5 @@
+- [x] Add submit button to contact form in templates/contact.html
+- [x] Remove dark/light mode toggle from test result page in templates/test_session_result.html
+- [ ] Add header image to quiz page in templates/quiz/quiz.html
+- [x] Change logout button color to btn-outline-primary in base.html
+- [x] Style submit button in contact.html form using id instead of class

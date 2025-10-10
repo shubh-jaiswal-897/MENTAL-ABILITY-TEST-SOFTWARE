@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <style>
+    /* neutral styling (removed theme toggle) */
+    body { background-color: #ffffff !important; color: #212529 !important; }
+    .card { background-color: #ffffff; color: #212529; border: 1px solid rgba(0,0,0,0.125); }
+    a { color: #0d6efd; }
+    .muted { color: #6c757d; }
+  </style>
+
+  <div class="container my-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h1 class="h3 mb-1">About MENTAL</h1>
+        <p class="muted mb-0">Reliable, research-backed mental ability tests for learners and educators.</p>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h4 class="card-title">Our Mission</h4>
+        <p class="card-text">To provide an accessible, secure platform that measures cognitive skills accurately and gives actionable insights to help learners grow.</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5>What we do</h5>
+            <p>We design adaptive and timed tests, score responses, and generate clear reports that highlight strengths, weaknesses and recommended next steps.</p>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5>How it works</h5>
+            <p>Users take quizzes online. The system evaluates answers, computes marks and percentage, and produces a result summary with tailored suggestions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5>Our Team</h5>
+            <p class="mb-1">A small team of educators, developers and data analysts dedicated to fair assessments.</p>
+            <ul class="mb-0">
+              <li>Product & Curriculum</li>
+              <li>Engineering & Data</li>
+              <li>Support & Operations</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5>Contact</h5>
+            <p class="mb-0">For partnership or support: <a href="mailto:info@mental.example">info@mental.example</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-end mt-2">
+      <a class="btn btn-outline-primary" href="{% url 'quiz:index' %}">Back to Tests</a>
+    </div>
+  </div>
+{% endblock %}

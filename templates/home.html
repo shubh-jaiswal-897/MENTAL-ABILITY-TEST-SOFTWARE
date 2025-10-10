@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <div class="jumbotron">
+    <h1 class="display-4">Welcome to MENTAL ABILITY TEST SOFTWARE</h1>
+    <p class="lead">Practice your HTML knowledge with quick quizzes.</p>
+    <hr class="my-4">
+    <p>
+  <a class="btn btn-primary btn-lg" href="{% url 'quiz:signup' %}" role="button">Sign up</a>
+  <a class="btn btn-outline-primary btn-lg" href="{% url 'login' %}" role="button">Student Login</a>
+    </p>
+  </div>
+{% endblock %}

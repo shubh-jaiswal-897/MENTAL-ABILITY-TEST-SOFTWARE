@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <div class="p-4 bg-light rounded-3">
+    <h1>Welcome to MENTAL ABILITY TEST SOFTWARE</h1>
+    <p class="lead">Take timed practice tests or review all questions on the Revision page.</p>
+    <p>
+      <a class="btn btn-primary me-2" href="{% url 'quiz:test_session' %}">Start Test Session</a>
+      <a class="btn btn-outline-secondary" href="{% url 'quiz:revision' %}">Go to Revision</a>
+    </p>
+  </div>
+
+  <hr />
+
+  <div>
+    <h4>How it works</h4>
+    <ul>
+      <li>Sign up as a student and start a timed test session.</li>
+      <li>Use the Revision page to review all questions and practise at your own pace.</li>
+      <li>Results are stored in your attempt history after each session.</li>
+    </ul>
+  </div>
+{% endblock %}

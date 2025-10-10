@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quiz - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <img src="{% static 'images/quiz_header.jpg' %}" alt="Quiz Header" class="img-fluid mb-4" style="max-height: 300px; width: 100%; object-fit: cover;">
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="card-title">{{ question.text }}</h2>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          {% for choice in shuffled_choices|default:question.choices.all %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.pk }}">
+            <label class="form-check-label" for="choice{{ forloop.counter }}">{{ choice.text }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

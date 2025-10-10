@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Result - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+  <!-- ...existing code... -->
+  <style>
+    body { background-color: #ffffff !important; color: #212529 !important; }
+    .card { background-color: #ffffff; color: #212529; border: 1px solid rgba(0,0,0,0.125); }
+    .card .card-body a.btn { color: #fff; }
+    .muted { color: #6c757d; }
+  </style>
+
+  <div class="card">
+    <div class="card-body">
+        <h2 class="mb-3">Test Complete</h2>
+
+        <p>Your score: {{ score }} / {{ total }}</p>
+        <p>Marks obtained: {{ marks }} / {{ max_marks }}</p>
+        <p>Percentage: {{ percentage }}%</p>
+
+        <a class="btn btn-primary" href="{% url 'quiz:index' %}">Back to Questions</a>
+    </div>
+  </div>
+  <!-- ...existing code... -->
+{% endblock %}
