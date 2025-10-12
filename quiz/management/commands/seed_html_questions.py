@@ -1,188 +1,748 @@
 from django.core.management.base import BaseCommand
-from quiz.models import Question, Choice
-from quiz.models import Subject
-
+from quiz.models import Question, Choice, Subject
 
 QUESTIONS = [
     ("What does HTML stand for?", [
         ("Hyper Text Markup Language", True),
+        ("High Tech Modern Language", False),
+        ("Hyperlink and Text Markup Language", False),
         ("Home Tool Markup Language", False),
-        ("Hyperlinks and Text Markup Language", False),
-        ("Hyper Transfer Markup Language", False),
     ]),
-    ("Which HTML element is used to define the largest heading?", [
+    ("Who is making the Web standards?", [
+        ("The World Wide Web Consortium", True),
+        ("Mozilla", False),
+        ("Microsoft", False),
+        ("Google", False),
+    ]),
+    ("Choose the correct HTML element for the largest heading:", [
         ("<h1>", True),
-        ("<head>", False),
         ("<h6>", False),
-        ("<header>", False),
+        ("<heading>", False),
+        ("<head>", False),
     ]),
-    ("Which tag is used to create a hyperlink?", [
-        ("<a>", True),
-        ("<link>", False),
-        ("<href>", False),
-        ("<url>", False),
+    ("What is the correct HTML element for inserting a line break?", [
+        ("<br>", True),
+        ("<lb>", False),
+        ("<break>", False),
+        ("<newline>", False),
     ]),
-    ("Which attribute is used to specify an alternate text for an image?", [
-        ("alt", True),
-        ("title", False),
-        ("src", False),
-        ("longdesc", False),
+    ("What is the correct HTML for adding a background color?", [
+        ("<body style='background-color:yellow;'>", True),
+        ("<background>yellow</background>", False),
+        ("<body bg='yellow'>", False),
+        ("<body background='yellow'>", False),
     ]),
-    ("How do you create a numbered list in HTML?", [
-        ("<ol>", True),
-        ("<ul>", False),
-        ("<li>", False),
-        ("<dl>", False),
+    ("Choose the correct HTML element to define important text:", [
+        ("<strong>", True),
+        ("<b>", False),
+        ("<i>", False),
+        ("<important>", False),
     ]),
-    ("Which doctype is correct for HTML5?", [
-        ("<!DOCTYPE html>", True),
-        ("<!DOCTYPE HTML PUBLIC\"-//W3C//DTD HTML 4.01//EN\"\">", False),
-        ("<DOCTYPE html5>", False),
-        ("<!DOCTYPE XHTML>", False),
+    ("Choose the correct HTML element to define emphasized text:", [
+        ("<em>", True),
+        ("<i>", False),
+        ("<italic>", False),
+        ("<emphasize>", False),
     ]),
-    ("Which element is used to specify a footer for a document or section?", [
-        ("<footer>", True),
-        ("<bottom>", False),
-        ("<section-footer>", False),
-        ("<foot>", False),
+    ("What is the correct HTML for creating a hyperlink?", [
+        ("<a href='http://www.w3schools.com'>W3Schools</a>", True),
+        ("<a>http://www.w3schools.com</a>", False),
+        ("<a url='http://www.w3schools.com'>W3Schools</a>", False),
+        ("<a name='http://www.w3schools.com'>W3Schools</a>", False),
     ]),
-    (("How do you insert a comment in HTML?"), [
-        ("<!-- This is a comment -->", True),
-        ("// This is a comment", False),
-        ("/* This is a comment */", False),
-        ("# This is a comment", False),
-    ]),
-    ("Which tag is used to display a picture on a web page?", [
-        ("<img>", True),
-        ("<picture>", False),
-        ("<image>", False),
-        ("<src>", False),
-    ]),
-    ("Which HTML attribute is used to define inline styles?", [
-        ("style", True),
-        ("class", False),
-        ("font", False),
-        ("styles", False),
-    ]),
-    ("Which element defines navigation links?", [
-        ("<nav>", True),
-        ("<navigate>", False),
-        ("<navigation>", False),
-        ("<menu>", False),
+    ("Which character is used to indicate an end tag?", [
+        ("/", True),
+        ("*", False),
+        ("^", False),
+        ("<", False),
     ]),
     ("How can you open a link in a new tab/browser window?", [
-        ("Use target=\"_blank\" on the <a> tag", True),
-        ("Use rel=\"external\" on the <a> tag", False),
-        ("Use newtab=\"true\"", False),
-        ("Use href=\"_blank\"", False),
+        ("<a href='url' target='_blank'>", True),
+        ("<a href='url' new>", False),
+        ("<a href='url' target='new'>", False),
+        ("<a href='url' open>", False),
     ]),
-    ("Which HTML element is used to specify a scalar measurement within text?", [
-        ("<meter>", True),
-        ("<measure>", False),
-        ("<progress>", False),
-        ("<gauge>", False),
+    ("Which of these elements are all <table> elements?", [
+        ("<table><tr><td>", True),
+        ("<table><head><tfoot>", False),
+        ("<table><tr><tt>", False),
+        ("<thead><body><tr>", False),
     ]),
-    ("Which element is used to embed a video in HTML5?", [
-        ("<video>", True),
-        ("<media>", False),
-        ("<movie>", False),
-        ("<embed>", False),
+    ("Inline elements are normally displayed without starting a new line.", [
+        ("True", True),
+        ("False", False),
+        ("Depends on the browser", False),
+        ("Only in tables", False),
     ]),
-    ("What is the correct HTML element for playing audio files?", [
-        ("<audio>", True),
-        ("<sound>", False),
-        ("<play>", False),
-        ("<media>", False),
+    ("How can you make a numbered list?", [
+        ("<ol>", True),
+        ("<ul>", False),
+        ("<dl>", False),
+        ("<list>", False),
     ]),
-    ("Which attribute is used to specify the URL of an image?", [
-        ("src", True),
-        ("href", False),
-        ("link", False),
-        ("url", False),
+    ("How can you make a bulleted list?", [
+        ("<ul>", True),
+        ("<ol>", False),
+        ("<dl>", False),
+        ("<list>", False),
     ]),
-    ("Which tag is used to define an internal style sheet?", [
+    ("What is the correct HTML for making a checkbox?", [
+        ("<input type='checkbox'>", True),
+        ("<checkbox>", False),
+        ("<input type='check'>", False),
+        ("<check>", False),
+    ]),
+    ("What is the correct HTML for making a text input field?", [
+        ("<input type='text'>", True),
+        ("<input type='textfield'>", False),
+        ("<textfield>", False),
+        ("<textinput>", False),
+    ]),
+    ("What is the correct HTML for making a drop-down list?", [
+        ("<select>", True),
+        ("<list>", False),
+        ("<dropdown>", False),
+        ("<input type='dropdown'>", False),
+    ]),
+    ("What is the correct HTML for making a text area?", [
+        ("<textarea>", True),
+        ("<input type='textarea'>", False),
+        ("<input type='textbox'>", False),
+        ("<textbox>", False),
+    ]),
+    ("What is the correct HTML for inserting an image?", [
+        ("<img src='image.gif' alt='MyImage'>", True),
+        ("<image src='image.gif' alt='MyImage'>", False),
+        ("<img href='image.gif' alt='MyImage'>", False),
+        ("<img alt='MyImage'>image.gif</img>", False),
+    ]),
+    ("What is the correct HTML for inserting a background image?", [
+        ("<body background='background.gif'>", True),
+        ("<body bg='background.gif'>", False),
+        ("<background img='background.gif'>", False),
+        ("<body style='background-image:url(background.gif)'>", False),
+    ]),
+    ("<canvas> is only a container for graphics.", [
+        ("True", True),
+        ("False", False),
+        ("Only for images", False),
+        ("Only for text", False),
+    ]),
+    ("What does CSS stand for?", [
+        ("Cascading Style Sheets", True),
+        ("Creative Style Sheets", False),
+        ("Computer Style Sheets", False),
+        ("Colorful Style Sheets", False),
+    ]),
+    ("Where in an HTML document is the correct place to refer to an external style sheet?", [
+        ("In the <head> section", True),
+        ("In the <body> section", False),
+        ("At the end of the document", False),
+        ("In the <title> section", False),
+    ]),
+    ("Which HTML tag is used to define an internal style sheet?", [
         ("<style>", True),
         ("<css>", False),
         ("<script>", False),
         ("<link>", False),
     ]),
-    ("Which HTML element is used to define important text?", [
-        ("<strong>", True),
-        ("<b>", False),
-        ("<important>", False),
-        ("<i>", False),
+    ("Which HTML attribute is used to define inline styles?", [
+        ("style", True),
+        ("styles", False),
+        ("class", False),
+        ("font", False),
     ]),
-    ("Which tag is used to create a checkbox in a form?", [
-        ("<input type=\"checkbox\">", True),
-        ("<checkbox>", False),
-        ("<input type=\"check\">", False),
-        ("<check>", False),
+    ("Which is the correct CSS syntax?", [
+        ("body {color: black;}", True),
+        ("{body:color=black;}", False),
+        ("body:color=black;", False),
+        ("body {color= black;}", False),
     ]),
-    ("How do you create a drop-down list in HTML?", [
-        ("<select>", True),
-        ("<dropdown>", False),
-        ("<list>", False),
-        ("<optionlist>", False),
+    ("How do you insert a comment in a CSS file?", [
+        ("/* this is a comment */", True),
+        ("// this is a comment //", False),
+        ("<!-- this is a comment -->", False),
+        ("# this is a comment #", False),
     ]),
-    ("Which attribute is used to provide a unique identifier to an HTML element?", [
+    ("Which property is used to change the background color?", [
+        ("background-color", True),
+        ("bgcolor", False),
+        ("color", False),
+        ("background", False),
+    ]),
+    ("How do you add a background color for all <h1> elements?", [
+        ("h1 {background-color:#FFFFFF;}", True),
+        ("all.h1 {background-color:#FFFFFF;}", False),
+        ("h1.all {background-color:#FFFFFF;}", False),
+        ("h1 {bgcolor:#FFFFFF;}", False),
+    ]),
+    ("Which CSS property is used to change the text color of an element?", [
+        ("color", True),
+        ("fgcolor", False),
+        ("text-color", False),
+        ("font-color", False),
+    ]),
+    ("Which CSS property controls the text size?", [
+        ("font-size", True),
+        ("text-size", False),
+        ("font-style", False),
+        ("text-style", False),
+    ]),
+    ("What is the correct CSS syntax for making all the <p> elements bold?", [
+        ("p {font-weight:bold;}", True),
+        ("<p style='font-size:bold;'>", False),
+        ("p {text-size:bold;}", False),
+        ("p {font:bold;}", False),
+    ]),
+    ("How do you display hyperlinks without an underline?", [
+        ("a {text-decoration:none;}", True),
+        ("a {decoration:no-underline;}", False),
+        ("a {text-decoration:no-underline;}", False),
+        ("a {underline:none;}", False),
+    ]),
+    ("How do you make each word in a text start with a capital letter?", [
+        ("text-transform:capitalize", True),
+        ("You can't do that with CSS", False),
+        ("transform:capitalize", False),
+        ("font-transform:capitalize", False),
+    ]),
+    ("Which property is used to change the font of an element?", [
+        ("font-family", True),
+        ("font", False),
+        ("font-style", False),
+        ("font-weight", False),
+    ]),
+    ("How do you make the text bold?", [
+        ("font-weight:bold", True),
+        ("style:bold", False),
+        ("font:bold", False),
+        ("bold:true", False),
+    ]),
+    ("Which property is used to change the left margin of an element?", [
+        ("margin-left", True),
+        ("indent", False),
+        ("margin", False),
+        ("padding-left", False),
+    ]),
+    ("When using the padding property; are you allowed to use negative values?", [
+        ("No", True),
+        ("Yes", False),
+        ("Depends on the browser", False),
+        ("Only for top and bottom", False),
+    ]),
+    ("How do you make a list that lists its items with squares?", [
+        ("list-style-type: square", True),
+        ("list-type: square", False),
+        ("list-style: square", False),
+        ("li {square}", False),
+    ]),
+    ("The # symbol specifies that the selector is?", [
         ("id", True),
         ("class", False),
-        ("name", False),
-        ("key", False),
+        ("tag", False),
+        ("universal", False),
     ]),
-    ("Which element is used to group related elements in a form?", [
-        ("<fieldset>", True),
-        ("<group>", False),
-        ("<formgroup>", False),
-        ("<legend>", False),
+    ("The . symbol specifies that the selector is?", [
+        ("class", True),
+        ("id", False),
+        ("tag", False),
+        ("universal", False),
     ]),
-    ("Which tag is used to define a table row?", [
-        ("<tr>", True),
-        ("<td>", False),
-        ("<table-row>", False),
-        ("<row>", False),
+    ("What is the correct HTML for referring to an external style sheet?", [
+        ("<link rel='stylesheet' type='text/css' href='mystyle.css'>", True),
+        ("<stylesheet>mystyle.css</stylesheet>", False),
+        ("<style src='mystyle.css'>", False),
+        ("<link href='mystyle.css'>", False),
     ]),
-    ("Which tag defines a table header cell?", [
-        ("<th>", True),
-        ("<td>", False),
-        ("<thead>", False),
-        ("<header>", False),
+    ("Where in an HTML document is the correct place to refer to an external style sheet?", [
+        ("In the <head> section", True),
+        ("In the <body> section", False),
+        ("At the top of the document", False),
+        ("Before the </html> tag", False),
     ]),
-    ("Which tag is used to group the body content in a table?", [
-        ("<tbody>", True),
-        ("<thead>", False),
-        ("<tfoot>", False),
-        ("<tablebody>", False),
+    ("Which HTML tag is used to define an internal style sheet?", [
+        ("<style>", True),
+        ("<script>", False),
+        ("<css>", False),
+        ("<link>", False),
     ]),
-    ("Which attribute is used to specify the language of the document?", [
-        ("lang", True),
-        ("xml:lang", False),
-        ("language", False),
-        ("locale", False),
+    ("Which HTML attribute is used to define inline styles?", [
+        ("style", True),
+        ("class", False),
+        ("styles", False),
+        ("font", False),
     ]),
-    ("Which HTML element is used to specify a section that is quoted from another source?", [
-        ("<blockquote>", True),
-        ("<q>", False),
-        ("<cite>", False),
-        ("<quote>", False),
+    ("Which is the correct CSS syntax?", [
+        ("body {color: black;}", True),
+        ("body:color=black;", False),
+        ("{body;color:black;}", False),
+        ("body {color=black;}", False),
+    ]),
+    ("How do you insert a comment in a CSS file?", [
+        ("/* this is a comment */", True),
+        ("// this is a comment", False),
+        ("<!-- this is a comment -->", False),
+        ("# this is a comment", False),
+    ]),
+    ("Which property is used to change the background color?", [
+        ("background-color", True),
+        ("bgcolor", False),
+        ("color", False),
+        ("background", False),
+    ]),
+    ("How do you add a background color for all <h1> elements?", [
+        ("h1 {background-color:#FFFFFF;}", True),
+        ("h1.all {background-color:#FFFFFF;}", False),
+        ("all.h1 {background-color:#FFFFFF;}", False),
+        ("h1 {bgcolor:#FFFFFF;}", False),
+    ]),
+    ("Which CSS property is used to change the text color of an element?", [
+        ("color", True),
+        ("fgcolor", False),
+        ("text-color", False),
+        ("font-color", False),
+    ]),
+    ("Which CSS property controls the text size?", [
+        ("font-size", True),
+        ("text-size", False),
+        ("font-style", False),
+        ("text-style", False),
+    ]),
+    ("What is the correct CSS syntax for making all the <p> elements bold?", [
+        ("p {font-weight:bold;}", True),
+        ("p {text-size:bold;}", False),
+        ("<p style='font-size:bold;'>", False),
+        ("p {font:bold;}", False),
+    ]),
+    ("How do you display hyperlinks without an underline?", [
+        ("a {text-decoration:none;}", True),
+        ("a {text-decoration:no-underline;}", False),
+        ("a {underline:none;}", False),
+        ("a {decoration:no-underline;}", False),
+    ]),
+    ("How do you make each word in a text start with a capital letter?", [
+        ("text-transform:capitalize", True),
+        ("transform:capitalize", False),
+        ("font-transform:capitalize", False),
+        ("You can't do that with CSS", False),
+    ]),
+    ("Which property is used to change the font of an element?", [
+        ("font-family", True),
+        ("font", False),
+        ("font-style", False),
+        ("font-weight", False),
+    ]),
+    ("How do you make the text bold?", [
+        ("font-weight:bold", True),
+        ("style:bold", False),
+        ("font:bold", False),
+        ("bold:true", False),
+    ]),
+    ("Which property is used to change the left margin of an element?", [
+        ("margin-left", True),
+        ("indent", False),
+        ("margin", False),
+        ("padding-left", False),
+    ]),
+    ("When using the padding property; are you allowed to use negative values?", [
+        ("No", True),
+        ("Yes", False),
+        ("Depends on the browser", False),
+        ("Only for top and bottom", False),
+    ]),
+    ("How do you make a list that lists its items with squares?", [
+        ("list-style-type: square", True),
+        ("list-type: square", False),
+        ("list-style: square", False),
+        ("li {square}", False),
+    ]),
+    ("The # symbol specifies that the selector is?", [
+        ("id", True),
+        ("class", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("The . symbol specifies that the selector is?", [
+        ("class", True),
+        ("id", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("What is the correct HTML for referring to an external style sheet?", [
+        ("<link rel='stylesheet' type='text/css' href='mystyle.css'>", True),
+        ("<stylesheet>mystyle.css</stylesheet>", False),
+        ("<style src='mystyle.css'>", False),
+        ("<link href='mystyle.css'>", False),
+    ]),
+    ("Where in an HTML document is the correct place to refer to an external style sheet?", [
+        ("In the <head> section", True),
+        ("In the <body> section", False),
+        ("At the top of the document", False),
+        ("Before the </html> tag", False),
+    ]),
+    ("Which HTML tag is used to define an internal style sheet?", [
+        ("<style>", True),
+        ("<script>", False),
+        ("<css>", False),
+        ("<link>", False),
+    ]),
+    ("Which HTML attribute is used to define inline styles?", [
+        ("style", True),
+        ("class", False),
+        ("styles", False),
+        ("font", False),
+    ]),
+    ("Which is the correct CSS syntax?", [
+        ("body {color: black;}", True),
+        ("body:color=black;", False),
+        ("{body;color:black;}", False),
+        ("body {color=black;}", False),
+    ]),
+    ("How do you insert a comment in a CSS file?", [
+        ("/* this is a comment */", True),
+        ("// this is a comment", False),
+        ("<!-- this is a comment -->", False),
+        ("# this is a comment", False),
+    ]),
+    ("Which property is used to change the background color?", [
+        ("background-color", True),
+        ("bgcolor", False),
+        ("color", False),
+        ("background", False),
+    ]),
+    ("How do you add a background color for all <h1> elements?", [
+        ("h1 {background-color:#FFFFFF;}", True),
+        ("h1.all {background-color:#FFFFFF;}", False),
+        ("all.h1 {background-color:#FFFFFF;}", False),
+        ("h1 {bgcolor:#FFFFFF;}", False),
+    ]),
+    ("Which CSS property is used to change the text color of an element?", [
+        ("color", True),
+        ("fgcolor", False),
+        ("text-color", False),
+        ("font-color", False),
+    ]),
+    ("Which CSS property controls the text size?", [
+        ("font-size", True),
+        ("text-size", False),
+        ("font-style", False),
+        ("text-style", False),
+    ]),
+    ("What is the correct CSS syntax for making all the <p> elements bold?", [
+        ("p {font-weight:bold;}", True),
+        ("p {text-size:bold;}", False),
+        ("<p style='font-size:bold;'>", False),
+        ("p {font:bold;}", False),
+    ]),
+    ("How do you display hyperlinks without an underline?", [
+        ("a {text-decoration:none;}", True),
+        ("a {text-decoration:no-underline;}", False),
+        ("a {underline:none;}", False),
+        ("a {decoration:no-underline;}", False),
+    ]),
+    ("How do you make each word in a text start with a capital letter?", [
+        ("text-transform:capitalize", True),
+        ("transform:capitalize", False),
+        ("font-transform:capitalize", False),
+        ("You can't do that with CSS", False),
+    ]),
+    ("Which property is used to change the font of an element?", [
+        ("font-family", True),
+        ("font", False),
+        ("font-style", False),
+        ("font-weight", False),
+    ]),
+    ("How do you make the text bold?", [
+        ("font-weight:bold", True),
+        ("style:bold", False),
+        ("font:bold", False),
+        ("bold:true", False),
+    ]),
+    ("Which property is used to change the left margin of an element?", [
+        ("margin-left", True),
+        ("indent", False),
+        ("margin", False),
+        ("padding-left", False),
+    ]),
+    ("When using the padding property; are you allowed to use negative values?", [
+        ("No", True),
+        ("Yes", False),
+        ("Depends on the browser", False),
+        ("Only for top and bottom", False),
+    ]),
+    ("How do you make a list that lists its items with squares?", [
+        ("list-style-type: square", True),
+        ("list-type: square", False),
+        ("list-style: square", False),
+        ("li {square}", False),
+    ]),
+    ("The # symbol specifies that the selector is?", [
+        ("id", True),
+        ("class", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("The . symbol specifies that the selector is?", [
+        ("class", True),
+        ("id", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("What is the correct HTML for referring to an external style sheet?", [
+        ("<link rel='stylesheet' type='text/css' href='mystyle.css'>", True),
+        ("<stylesheet>mystyle.css</stylesheet>", False),
+        ("<style src='mystyle.css'>", False),
+        ("<link href='mystyle.css'>", False),
+    ]),
+    ("Where in an HTML document is the correct place to refer to an external style sheet?", [
+        ("In the <head> section", True),
+        ("In the <body> section", False),
+        ("At the top of the document", False),
+        ("Before the </html> tag", False),
+    ]),
+    ("Which HTML tag is used to define an internal style sheet?", [
+        ("<style>", True),
+        ("<script>", False),
+        ("<css>", False),
+        ("<link>", False),
+    ]),
+    ("Which HTML attribute is used to define inline styles?", [
+        ("style", True),
+        ("class", False),
+        ("styles", False),
+        ("font", False),
+    ]),
+    ("Which is the correct CSS syntax?", [
+        ("body {color: black;}", True),
+        ("body:color=black;", False),
+        ("{body;color:black;}", False),
+        ("body {color=black;}", False),
+    ]),
+    ("How do you insert a comment in a CSS file?", [
+        ("/* this is a comment */", True),
+        ("// this is a comment", False),
+        ("<!-- this is a comment -->", False),
+        ("# this is a comment", False),
+    ]),
+    ("Which property is used to change the background color?", [
+        ("background-color", True),
+        ("bgcolor", False),
+        ("color", False),
+        ("background", False),
+    ]),
+    ("How do you add a background color for all <h1> elements?", [
+        ("h1 {background-color:#FFFFFF;}", True),
+        ("h1.all {background-color:#FFFFFF;}", False),
+        ("all.h1 {background-color:#FFFFFF;}", False),
+        ("h1 {bgcolor:#FFFFFF;}", False),
+    ]),
+    ("Which CSS property is used to change the text color of an element?", [
+        ("color", True),
+        ("fgcolor", False),
+        ("text-color", False),
+        ("font-color", False),
+    ]),
+    ("Which CSS property controls the text size?", [
+        ("font-size", True),
+        ("text-size", False),
+        ("font-style", False),
+        ("text-style", False),
+    ]),
+    ("What is the correct CSS syntax for making all the <p> elements bold?", [
+        ("p {font-weight:bold;}", True),
+        ("p {text-size:bold;}", False),
+        ("<p style='font-size:bold;'>", False),
+        ("p {font:bold;}", False),
+    ]),
+    ("How do you display hyperlinks without an underline?", [
+        ("a {text-decoration:none;}", True),
+        ("a {text-decoration:no-underline;}", False),
+        ("a {underline:none;}", False),
+        ("a {decoration:no-underline;}", False),
+    ]),
+    ("How do you make each word in a text start with a capital letter?", [
+        ("text-transform:capitalize", True),
+        ("transform:capitalize", False),
+        ("font-transform:capitalize", False),
+        ("You can't do that with CSS", False),
+    ]),
+    ("Which property is used to change the font of an element?", [
+        ("font-family", True),
+        ("font", False),
+        ("font-style", False),
+        ("font-weight", False),
+    ]),
+    ("How do you make the text bold?", [
+        ("font-weight:bold", True),
+        ("style:bold", False),
+        ("font:bold", False),
+        ("bold:true", False),
+    ]),
+    ("Which property is used to change the left margin of an element?", [
+        ("margin-left", True),
+        ("indent", False),
+        ("margin", False),
+        ("padding-left", False),
+    ]),
+    ("When using the padding property; are you allowed to use negative values?", [
+        ("No", True),
+        ("Yes", False),
+        ("Depends on the browser", False),
+        ("Only for top and bottom", False),
+    ]),
+    ("How do you make a list that lists its items with squares?", [
+        ("list-style-type: square", True),
+        ("list-type: square", False),
+        ("list-style: square", False),
+        ("li {square}", False),
+    ]),
+    ("The # symbol specifies that the selector is?", [
+        ("id", True),
+        ("class", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("The . symbol specifies that the selector is?", [
+        ("class", True),
+        ("id", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("What is the correct HTML for referring to an external style sheet?", [
+        ("<link rel='stylesheet' type='text/css' href='mystyle.css'>", True),
+        ("<stylesheet>mystyle.css</stylesheet>", False),
+        ("<style src='mystyle.css'>", False),
+        ("<link href='mystyle.css'>", False),
+    ]),
+    ("Where in an HTML document is the correct place to refer to an external style sheet?", [
+        ("In the <head> section", True),
+        ("In the <body> section", False),
+        ("At the top of the document", False),
+        ("Before the </html> tag", False),
+    ]),
+    ("Which HTML tag is used to define an internal style sheet?", [
+        ("<style>", True),
+        ("<script>", False),
+        ("<css>", False),
+        ("<link>", False),
+    ]),
+    ("Which HTML attribute is used to define inline styles?", [
+        ("style", True),
+        ("class", False),
+        ("styles", False),
+        ("font", False),
+    ]),
+    ("Which is the correct CSS syntax?", [
+        ("body {color: black;}", True),
+        ("body:color=black;", False),
+        ("{body;color:black;}", False),
+        ("body {color=black;}", False),
+    ]),
+    ("How do you insert a comment in a CSS file?", [
+        ("/* this is a comment */", True),
+        ("// this is a comment", False),
+        ("<!-- this is a comment -->", False),
+        ("# this is a comment", False),
+    ]),
+    ("Which property is used to change the background color?", [
+        ("background-color", True),
+        ("bgcolor", False),
+        ("color", False),
+        ("background", False),
+    ]),
+    ("How do you add a background color for all <h1> elements?", [
+        ("h1 {background-color:#FFFFFF;}", True),
+        ("h1.all {background-color:#FFFFFF;}", False),
+        ("all.h1 {background-color:#FFFFFF;}", False),
+        ("h1 {bgcolor:#FFFFFF;}", False),
+    ]),
+    ("Which CSS property is used to change the text color of an element?", [
+        ("color", True),
+        ("fgcolor", False),
+        ("text-color", False),
+        ("font-color", False),
+    ]),
+    ("Which CSS property controls the text size?", [
+        ("font-size", True),
+        ("text-size", False),
+        ("font-style", False),
+        ("text-style", False),
+    ]),
+    ("What is the correct CSS syntax for making all the <p> elements bold?", [
+        ("p {font-weight:bold;}", True),
+        ("p {text-size:bold;}", False),
+        ("<p style='font-size:bold;'>", False),
+        ("p {font:bold;}", False),
+    ]),
+    ("How do you display hyperlinks without an underline?", [
+        ("a {text-decoration:none;}", True),
+        ("a {text-decoration:no-underline;}", False),
+        ("a {underline:none;}", False),
+        ("a {decoration:no-underline;}", False),
+    ]),
+    ("How do you make each word in a text start with a capital letter?", [
+        ("text-transform:capitalize", True),
+        ("transform:capitalize", False),
+        ("font-transform:capitalize", False),
+        ("You can't do that with CSS", False),
+    ]),
+    ("Which property is used to change the font of an element?", [
+        ("font-family", True),
+        ("font", False),
+        ("font-style", False),
+        ("font-weight", False),
+    ]),
+    ("How do you make the text bold?", [
+        ("font-weight:bold", True),
+        ("style:bold", False),
+        ("font:bold", False),
+        ("bold:true", False),
+    ]),
+    ("Which property is used to change the left margin of an element?", [
+        ("margin-left", True),
+        ("indent", False),
+        ("margin", False),
+        ("padding-left", False),
+    ]),
+    ("When using the padding property; are you allowed to use negative values?", [
+        ("No", True),
+        ("Yes", False),
+        ("Depends on the browser", False),
+        ("Only for top and bottom", False),
+    ]),
+    ("How do you make a list that lists its items with squares?", [
+        ("list-style-type: square", True),
+        ("list-type: square", False),
+        ("list-style: square", False),
+        ("li {square}", False),
+    ]),
+    ("The # symbol specifies that the selector is?", [
+        ("id", True),
+        ("class", False),
+        ("tag", False),
+        ("universal", False),
+    ]),
+    ("The . symbol specifies that the selector is?", [
+        ("class", True),
+        ("id", False),
+        ("tag", False),
+        ("universal", False),
     ]),
 ]
 
 
 class Command(BaseCommand):
-    help = 'Seed 30 HTML-related questions into the quiz app (idempotent)'
+    help = 'Seed 100 HTML-related questions into the quiz app (idempotent)'
 
     def handle(self, *args, **options):
         created = 0
         html_subj, _ = Subject.objects.get_or_create(name='HTML')
-        Subject.objects.get_or_create(name='CSS')
-        Subject.objects.get_or_create(name='JavaScript')
+        # Remove existing HTML questions
+        Question.objects.filter(subject=html_subj).delete()
         for q_text, choices in QUESTIONS:
-            q, q_created = Question.objects.get_or_create(text=q_text, defaults={'subject': html_subj})
-            if q_created:
-                created += 1
-            # create choices, avoid duplicates
+            q = Question.objects.create(text=q_text, subject=html_subj)
+            created += 1
+            # create choices
             for choice_text, is_correct in choices:
-                Choice.objects.get_or_create(question=q, text=choice_text, defaults={'is_correct': is_correct})
-
-        self.stdout.write(self.style.SUCCESS(f'Seed completed. Questions created: {created}'))
+                Choice.objects.create(question=q, text=choice_text, is_correct=is_correct)
+        self.stdout.write(self.style.SUCCESS(f'Successfully seeded {created} HTML questions.'))

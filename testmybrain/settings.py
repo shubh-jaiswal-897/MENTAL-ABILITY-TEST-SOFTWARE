@@ -7,7 +7,7 @@ SECRET_KEY = 'replace-me-for-production'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -74,3 +74,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Authentication redirects
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
+
+# In your project's settings.py
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.43.119', '0.0.0.0']
+
+# Example using a typical private IP:
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.10', '0.0.0.0']

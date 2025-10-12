@@ -3,23 +3,78 @@
 {% block title %}Home - MENTAL ABILITY TEST SOFTWARE{% endblock %}
 
 {% block content %}
-  <div class="p-4 bg-light rounded-3">
-    <h1>Welcome to MENTAL ABILITY TEST SOFTWARE</h1>
-    <p class="lead">Take timed practice tests or review all questions on the Revision page.</p>
-    <p>
-      <a class="btn btn-primary me-2" href="{% url 'quiz:test_session' %}">Start Test Session</a>
-      <a class="btn btn-outline-secondary" href="{% url 'quiz:revision' %}">Go to Revision</a>
-    </p>
+  <div class="row mb-5">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-body text-center p-5">
+          <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+          <h1 class="card-title">Welcome to MENTAL ABILITY TEST SOFTWARE</h1>
+          <p class="lead">Enhance your cognitive skills with our comprehensive testing platform. Take timed practice tests or review questions at your own pace.</p>
+          <div class="mt-4">
+            <a class="btn btn-primary btn-lg me-3" href="{% url 'quiz:test_session' %}" data-bs-toggle="tooltip" title="Start a timed test session"><i class="fas fa-play me-2"></i>Start Test Session</a>
+            <a class="btn btn-outline-success btn-lg" href="{% url 'quiz:revision' %}" data-bs-toggle="tooltip" title="Review all questions"><i class="fas fa-book me-2"></i>Go to Revision</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <hr />
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 interactive-hover">
+        <div class="card-body text-center">
+          <i class="fas fa-user-plus fa-2x text-info mb-3"></i>
+          <h5 class="card-title">Sign Up</h5>
+          <p class="card-text">Create your account to access personalized test sessions and track your progress.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 interactive-hover">
+        <div class="card-body text-center">
+          <i class="fas fa-clock fa-2x text-warning mb-3"></i>
+          <h5 class="card-title">Timed Tests</h5>
+          <p class="card-text">Challenge yourself with timed test sessions to simulate real exam conditions.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 interactive-hover">
+        <div class="card-body text-center">
+          <i class="fas fa-chart-line fa-2x text-success mb-3"></i>
+          <h5 class="card-title">Track Progress</h5>
+          <p class="card-text">View your results and attempt history to monitor improvement over time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div>
-    <h4>How it works</h4>
-    <ul>
-      <li>Sign up as a student and start a timed test session.</li>
-      <li>Use the Revision page to review all questions and practise at your own pace.</li>
-      <li>Results are stored in your attempt history after each session.</li>
-    </ul>
+  <div class="row mt-5">
+    <div class="col-lg-10 mx-auto">
+      <h4 class="text-center mb-4">How It Works</h4>
+      <div class="row">
+        <div class="col-md-4 text-center mb-4">
+          <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+            <span class="h4 text-primary mb-0">1</span>
+          </div>
+          <h6 class="mt-3">Sign Up</h6>
+          <p class="text-muted">Create your student account to get started.</p>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+          <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+            <span class="h4 text-primary mb-0">2</span>
+          </div>
+          <h6 class="mt-3">Take Tests</h6>
+          <p class="text-muted">Start timed sessions or practice in revision mode.</p>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+          <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+            <span class="h4 text-primary mb-0">3</span>
+          </div>
+          <h6 class="mt-3">Review Results</h6>
+          <p class="text-muted">Check your scores and improve with detailed feedback.</p>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}

@@ -1,3 +1,5 @@
+id  == "shubh111"
+pas == "shubh111"
 MENTAL ABILITY TEST SOFTWARE - minimal Django quiz app
 
 Quick start (Windows PowerShell):
@@ -33,3 +35,4 @@ Run tests:
 ```powershell
 python manage.py test
 ```
+

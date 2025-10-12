@@ -39,11 +39,13 @@
           {% for choice in shuffled_choices|default:question.choices.all %}
           <div class="mb-2">
             <label class="d-block">
-              <input type="radio" name="choice" value="{{ choice.pk }}"> {{ choice.text }}
+              <input type="radio" name="choice" value="{{ choice.pk }}" {% if selected_choice == choice.pk %}checked{% endif %}> {{ choice.text }}
             </label>
           </div>
           {% endfor %}
-          <button class="btn btn-primary" type="submit">Next</button>
+          {% if index > 1 %}<button class="btn btn-secondary me-2" type="submit" name="action" value="previous">Previous</button>{% endif %}
+          <button class="btn btn-primary me-2" type="submit" name="action" value="next">Next</button>
+          <button class="btn btn-danger" type="submit" name="action" value="end">End Test</button>
         </form>
       </div>
     </div>

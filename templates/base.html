@@ -1,34 +1,38 @@
 <!DOCTYPE html>
+{% load static %}
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}MENTAL ABILITY TEST SOFTWARE{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🧠</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  </head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    {% block extra_head %}{% endblock %}
   <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
       <div class="container-fluid">
-  <a class="navbar-brand" href="{% url 'quiz:index' %}">MENTAL ABILITY TEST SOFTWARE</a>
+        <a class="navbar-brand" href="{% url 'quiz:index' %}"><i class="fas fa-brain me-2"></i>MENTAL ABILITY TEST SOFTWARE</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'quiz:index' %}">Home</a>
+              <a class="nav-link" href="{% url 'quiz:index' %}"><i class="fas fa-home me-1"></i>Home</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'quiz:about' %}">About</a>
+              <a class="nav-link" href="{% url 'quiz:about' %}"><i class="fas fa-info-circle me-1"></i>About</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'quiz:contact' %}">Contact</a>
+              <a class="nav-link" href="{% url 'quiz:contact' %}"><i class="fas fa-envelope me-1"></i>Contact</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'quiz:test_session' %}">Test Session</a>
+              <a class="nav-link" href="{% url 'quiz:test_session' %}"><i class="fas fa-clipboard-check me-1"></i>Test Session</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'quiz:revision' %}">Revision</a>
+              <a class="nav-link" href="{% url 'quiz:revision' %}"><i class="fas fa-book me-1"></i>Revision</a>
             </li>
           </ul>
 
@@ -36,11 +40,11 @@
             {% if user.is_authenticated %}
               <span class="navbar-text me-2">Hello, {{ user.username }}</span>
               <form action="{% url 'logout' %}" method="post" style="display:inline">{% csrf_token %}
-                <button class="btn btn-outline-primary btn-sm" type="submit">Logout</button>
+                <button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-sign-out-alt me-1"></i>Logout</button>
               </form>
             {% else %}
-              <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'quiz:signup' %}">Sign up</a>
-              <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'login' %}">Student Login</a>
+              <a class="btn btn-primary btn-sm me-2" href="{% url 'quiz:signup' %}">Sign up</a>
+              <a class="btn btn-primary btn-sm me-2" href="{% url 'login' %}">Student Login</a>
               <a class="btn btn-outline-dark btn-sm" href="/admin/">Admin</a>
             {% endif %}
           </div>
@@ -52,6 +56,60 @@
       {% block content %}{% endblock %}
     </div>
 
+    <!-- Footer -->
+    <footer class="footer mt-5">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h5><i class="fas fa-brain me-2"></i>MENTAL ABILITY TEST SOFTWARE</h5>
+            <p>Enhance your cognitive skills with our comprehensive testing platform.</p>
+          </div>
+          <div class="col-md-4">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+              <li><a href="{% url 'quiz:index' %}">Home</a></li>
+              <li><a href="{% url 'quiz:about' %}">About</a></li>
+              <li><a href="{% url 'quiz:contact' %}">Contact</a></li>
+              <li><a href="{% url 'quiz:test_session' %}">Test Session</a></li>
+              <li><a href="{% url 'quiz:revision' %}">Revision</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Contact Info</h5>
+            <p><i class="fas fa-envelope me-2"></i>sj7518378908@gmail.com</p>
+            <p><i class="fas fa-phone me-2"></i>+91 7518378908</p>
+            <p>&copy; 2025 Mental Ability Test Software. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Add interactivity
+      document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+          anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+              behavior: 'smooth'
+            });
+          });
+        });
+
+        // Add fade-in animation to content
+        const content = document.querySelector('.container.mt-4');
+        if (content) {
+          content.classList.add('fade-in-up');
+        }
+
+        // Tooltip initialization
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      });
+    </script>
   </body>
 </html>

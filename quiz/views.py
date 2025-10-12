@@ -45,25 +45,12 @@ def revision(request):
     if search_q:
         qs = qs.filter(text__icontains=search_q)
 
-    # Pagination
-    paginator = Paginator(qs, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Build params string excluding page for pagination links
-    params = request.GET.copy()
-    if 'page' in params:
-        params.pop('page')
-    params_str = params.urlencode()
-    if params_str:
-        params_str = '&' + params_str
-
+    # No pagination, show all
     return render(request, 'quiz/revision.html', {
-        'questions': page_obj,
+        'questions': qs,
         'subjects': subjects,
         'selected_subject': subject_id,
         'search_query': search_q,
-        'params': params_str,
     })
 
 
@@ -129,10 +116,9 @@ def test_session(request):
         # initialize session
         subject_ids = request.GET.getlist('subjects')
         limit = request.GET.get('limit')
-        if subject_ids:
-            qs_qs = Question.objects.filter(subject_id__in=subject_ids)
-        else:
-            qs_qs = Question.objects.all()
+        if not subject_ids:
+            return render(request, 'test_session.html', {'error': 'Please select at least one subject.', 'subjects': Subject.objects.all()})
+        qs_qs = Question.objects.filter(subject_id__in=subject_ids)
         qs_ids = list(qs_qs.values_list('id', flat=True))
 
         # apply limit
@@ -148,9 +134,6 @@ def test_session(request):
             return render(request, 'test_session.html', {'error': 'No questions available.'})
 
         random.shuffle(qs_ids)
-
-        # limit to 10 questions for a session
-        qs_ids = qs_ids[:10]
         request.session['test_qs'] = qs_ids
         # store selected subject names for attempt record
         request.session['test_subjects'] = ','.join([str(s) for s in subject_ids])
@@ -212,31 +195,71 @@ def test_session(request):
             selected = None
 
         qid = qs[index]
-        question = Question.objects.get(pk=qid)
-        if selected:
-            try:
-                choice = question.choices.get(pk=selected)
-                if choice.is_correct:
-                    request.session['test_score'] = int(request.session.get('test_score', 0)) + 1
-            except Choice.DoesNotExist:
-                pass
+        answers = request.session.get('test_answers', {})
+        answers[str(qid)] = selected
+        request.session['test_answers'] = answers
 
-        # advance
-        index += 1
-        request.session['test_index'] = index
-        if index >= len(qs):
+        action = request.POST.get('action', 'next')
+        if action == 'end':
+            # calculate final score
+            score = 0
+            answers = request.session.get('test_answers', {})
+            for qid_str, choice_id in answers.items():
+                if choice_id:
+                    try:
+                        q = Question.objects.get(pk=int(qid_str))
+                        choice = q.choices.get(pk=choice_id)
+                        if choice.is_correct:
+                            score += 1
+                    except:
+                        pass
+            request.session['test_score'] = score
             # persist attempt
             from .models import TestAttempt
             attempt = TestAttempt.objects.create(
                 user=request.user,
                 started_at=timezone.datetime.fromtimestamp(float(start_ts)),
                 finished_at=timezone.now(),
-                score=int(request.session.get('test_score', 0)),
+                score=score,
                 total=len(qs),
                 subjects=request.session.get('test_subjects', ''),
                 questions=','.join([str(x) for x in qs])
             )
             return redirect('quiz:test_result')
+        elif action == 'previous':
+            index -= 1
+        else:
+            index += 1
+
+        request.session['test_index'] = index
+        if index >= len(qs):
+            # calculate final score
+            score = 0
+            for qid_str, choice_id in answers.items():
+                if choice_id:
+                    try:
+                        q = Question.objects.get(pk=int(qid_str))
+                        choice = q.choices.get(pk=choice_id)
+                        if choice.is_correct:
+                            score += 1
+                    except:
+                        pass
+            request.session['test_score'] = score
+            # persist attempt
+            from .models import TestAttempt
+            attempt = TestAttempt.objects.create(
+                user=request.user,
+                started_at=timezone.datetime.fromtimestamp(float(start_ts)),
+                finished_at=timezone.now(),
+                score=score,
+                total=len(qs),
+                subjects=request.session.get('test_subjects', ''),
+                questions=','.join([str(x) for x in qs])
+            )
+            return redirect('quiz:test_result')
+        elif index < 0:
+            index = 0
+            request.session['test_index'] = 0
         return redirect('quiz:test_session')
 
     # GET: show current question
@@ -246,12 +269,15 @@ def test_session(request):
     # shuffle choices for this question
     choices = list(question.choices.all())
     random.shuffle(choices)
+    answers = request.session.get('test_answers', {})
+    selected_choice = answers.get(str(qid))
     return render(request, 'test_session.html', {
         'question': question,
         'shuffled_choices': choices,
         'index': index + 1,
         'total': len(qs),
         'remaining_seconds': remaining_seconds,
+        'selected_choice': selected_choice,
     })
 
 
@@ -266,7 +292,7 @@ def test_result(request):
     if max_marks > 0:
         percentage = round((marks / max_marks) * 100, 2)
     # clear session keys (including duration)
-    for k in ['test_qs', 'test_index', 'test_score', 'test_start', 'test_duration', 'test_subjects']:
+    for k in ['test_qs', 'test_index', 'test_score', 'test_start', 'test_duration', 'test_subjects', 'test_answers']:
         request.session.pop(k, None)
     return render(request, 'test_session_result.html', {
         'score': score,
