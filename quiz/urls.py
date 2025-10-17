@@ -14,4 +14,5 @@ urlpatterns = [
     path('revision/', views.revision, name='revision'),
     path('test-session/', login_required(views.test_session), name='test_session'),
     path('test-result/', login_required(views.test_result), name='test_result'),
+    path('dashboard/', login_required(views.dashboard), name='dashboard'),
 ]

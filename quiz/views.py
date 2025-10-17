@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Question, Choice, ContactSubmission
+from .models import Question, Choice, ContactSubmission, TestAttempt, Subject
 from .forms import ContactForm
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
@@ -9,6 +9,8 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import random
+import json
+from django.db.models import Avg, Count
 
 def index(request):
     # Home page: do not show the full question list here.
@@ -301,3 +303,67 @@ def test_result(request):
         'max_marks': max_marks,
         'percentage': percentage,
     })
+
+
+@login_required
+def dashboard(request):
+    attempts = TestAttempt.objects.filter(user=request.user).order_by('-started_at')
+    total_attempts = attempts.count()
+    avg_score = 0
+    subject_avg = {}
+    recommendations = []
+    scores_over_time = []
+
+    if total_attempts > 0:
+        avg_score = attempts.aggregate(Avg('score'))['score__avg'] or 0
+        avg_score = round((avg_score / attempts.first().total * 100) if attempts.first().total > 0 else 0, 2)
+
+        # Get subject name mapping
+        subject_name_map = {str(sub.id): sub.name for sub in Subject.objects.all()}
+
+        # Subject-wise performance
+        subject_scores = {}
+        for attempt in attempts:
+            subjects_list = [s.strip() for s in attempt.subjects.split(',') if s.strip()] if attempt.subjects else []
+            score_perc = (attempt.score / attempt.total * 100) if attempt.total > 0 else 0
+            for sub in subjects_list:
+                subject_name = subject_name_map.get(sub, sub)  # Use name if available, else ID
+                if subject_name in subject_scores:
+                    subject_scores[subject_name]['count'] += 1
+                    subject_scores[subject_name]['total_score'] += score_perc
+                else:
+                    subject_scores[subject_name] = {'count': 1, 'total_score': score_perc}
+
+        subject_avg = {sub: round(data['total_score'] / data['count'], 2) for sub, data in subject_scores.items()}
+
+        # Recommendations: subjects with average below 60%
+        recommendations = [sub for sub, avg in subject_avg.items() if avg < 60]
+
+        # Scores over time (last 10 attempts)
+        scores_over_time = [
+            {
+                'date': attempt.started_at.strftime('%Y-%m-%d'),
+                'score': (attempt.score / attempt.total * 100) if attempt.total > 0 else 0
+            }
+            for attempt in attempts[:10]
+        ]
+
+    # Convert subject IDs to names for display in recent activity
+    recent_attempts = []
+    subject_name_map = {str(sub.id): sub.name for sub in Subject.objects.all()}
+    for attempt in attempts[:5]:
+        attempt_copy = attempt
+        subjects_list = [s.strip() for s in attempt.subjects.split(',') if s.strip()] if attempt.subjects else []
+        subject_names = [subject_name_map.get(sub, sub) for sub in subjects_list]
+        attempt_copy.subject_names = ', '.join(subject_names)
+        recent_attempts.append(attempt_copy)
+
+    context = {
+        'total_attempts': total_attempts,
+        'avg_score': avg_score,
+        'subject_avg': subject_avg,
+        'recommendations': recommendations,
+        'scores_over_time': json.dumps(scores_over_time),  # Convert to JSON for JavaScript
+        'attempts': recent_attempts,  # Pass recent attempts with subject names
+    }
+    return render(request, 'dashboard.html', context)

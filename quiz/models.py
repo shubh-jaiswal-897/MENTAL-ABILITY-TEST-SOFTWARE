@@ -36,7 +36,7 @@ class TestAttempt(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.started_at:%Y-%m-%d %H:%M}"
-
+ 
 
 # New model: store contact.html submissions
 class ContactSubmission(models.Model):

@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - {{ block.super }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="dashboard-title"><i class="fas fa-chart-line me-2"></i>Student Performance Dashboard</h1>
+            <div class="d-flex justify-content-end mb-3">
+                <button id="refresh-btn" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh Data
+                </button>
+                <a href="{% url 'quiz:test_session' %}" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i>Start New Session
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if total_attempts == 0 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                You haven't taken any tests yet. Start a test session to see your performance analytics here!
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="top" title="Total number of test attempts you've made.">
+                <div class="stat-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ total_attempts }}</h3>
+                    <p>Total Attempts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="top" title="Your overall average score across all attempts.">
+                <div class="stat-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ avg_score }}%</h3>
+                    <p>Average Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="top" title="Number of different subjects you've practiced.">
+                <div class="stat-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>{{ subject_avg|length }}</h3>
+                    <p>Subjects Covered</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scores Over Time Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-card">
+                <h4><i class="fas fa-chart-line me-2"></i>Scores Over Time</h4>
+                <canvas id="scoresChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Tips and Recent Activity -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="chart-card collapsible-section">
+                <h4 class="collapsible-header" data-bs-toggle="collapse" data-bs-target="#studyTipsCollapse" aria-expanded="true" aria-controls="studyTipsCollapse">
+                    <i class="fas fa-lightbulb me-2"></i>Study Tips <i class="fas fa-chevron-down float-end"></i>
+                </h4>
+                <div id="studyTipsCollapse" class="collapse show">
+                    <div class="study-tips">
+                        {% if avg_score >= 80 %}
+                            <p><i class="fas fa-star text-warning me-2"></i>Great job! You're performing excellently. Keep up the consistent practice.</p>
+                            <p><i class="fas fa-brain me-2"></i>Tip: Challenge yourself with harder questions to maintain your edge.</p>
+                        {% elif avg_score >= 60 %}
+                            <p><i class="fas fa-thumbs-up text-info me-2"></i>Good progress! You're on the right track.</p>
+                            <p><i class="fas fa-clock me-2"></i>Tip: Review mistakes regularly and focus on weak areas.</p>
+                        {% else %}
+                            <p><i class="fas fa-exclamation-triangle text-danger me-2"></i>Keep pushing! Improvement comes with practice.</p>
+                            <p><i class="fas fa-book me-2"></i>Tip: Break down complex topics into smaller parts and study daily.</p>
+                        {% endif %}
+                        <p><i class="fas fa-calendar-alt me-2"></i>Remember: Consistent daily study is more effective than cramming.</p>
+                        <p><i class="fas fa-users me-2"></i>Tip: Discuss difficult concepts with peers or mentors.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card collapsible-section">
+                <h4 class="collapsible-header" data-bs-toggle="collapse" data-bs-target="#recentActivityCollapse" aria-expanded="true" aria-controls="recentActivityCollapse">
+                    <i class="fas fa-history me-2"></i>Recent Activity <i class="fas fa-chevron-down float-end"></i>
+                </h4>
+                <div id="recentActivityCollapse" class="collapse show">
+                    <div class="recent-activity">
+                        {% for attempt in attempts|slice:":5" %}
+                            <div class="activity-item mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span><strong>{{ attempt.started_at|date:"M d, Y" }}</strong> - {{ attempt.subject_names|truncatechars:20 }}</span>
+                                    <span class="badge {% if attempt.score|floatformat:0 >= 80 %}bg-success{% elif attempt.score|floatformat:0 >= 60 %}bg-info{% else %}bg-warning text-dark{% endif %}">{{ attempt.score|floatformat:0 }}/{{ attempt.total }}</span>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">No recent activity yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="recommendations-card collapsible-section">
+                <h4 class="collapsible-header" data-bs-toggle="collapse" data-bs-target="#recommendationsCollapse" aria-expanded="true" aria-controls="recommendationsCollapse">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Recommended Focus Areas <i class="fas fa-chevron-down float-end"></i>
+                </h4>
+                <div id="recommendationsCollapse" class="collapse show">
+                    <p>Based on your performance, we recommend focusing on the following subjects:</p>
+                    <div class="recommendations-list">
+                        {% for subject in recommendations %}
+                        <span class="badge bg-warning text-dark">{{ subject }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'quiz:test_session' %}" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>Start Practice Session
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Subject Details -->
+    {% if subject_avg %}
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-card">
+                <h4><i class="fas fa-list me-2"></i>Subject-wise Performance</h4>
+                <div class="mb-3">
+                    <select id="subject-filter" class="form-select">
+                        <option value="">All Subjects</option>
+                        {% for subject in subject_avg %}
+                        <option value="{{ subject }}">{{ subject }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="subject-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Average Score (%)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subject, avg in subject_avg.items %}
+                            <tr data-subject="{{ subject }}">
+                                <td>{{ subject }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if avg >= 80 %}bg-success{% elif avg >= 60 %}bg-info{% else %}bg-warning{% endif %}" role="progressbar" style="width: {{ avg }}%;" aria-valuenow="{{ avg }}" aria-valuemin="0" aria-valuemax="100">{{ avg }}%</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if avg >= 80 %}
+                                        <span class="badge bg-success">Excellent</span>
+                                    {% elif avg >= 60 %}
+                                        <span class="badge bg-info">Good</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Needs Improvement</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Collapsible sections toggle icons
+    document.querySelectorAll('.collapsible-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var icon = this.querySelector('i.float-end');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-down');
+                icon.classList.toggle('fa-chevron-up');
+            }
+        });
+    });
+
+    // Refresh button functionality
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        location.reload();
+    });
+
+    // Subject filter functionality
+    var subjectFilter = document.getElementById('subject-filter');
+    var subjectTable = document.getElementById('subject-table');
+    if (subjectFilter && subjectTable) {
+        subjectFilter.addEventListener('change', function() {
+            var selectedSubject = this.value;
+            var rows = subjectTable.querySelectorAll('tbody tr');
+            rows.forEach(function(row) {
+                if (selectedSubject === '' || row.getAttribute('data-subject') === selectedSubject) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Chart.js for Scores Over Time
+    var scoresOverTime = {{ scores_over_time|safe }};
+    if (scoresOverTime.length > 0) {
+        var ctx = document.getElementById('scoresChart').getContext('2d');
+        var labels = scoresOverTime.map(function(item) { return item.date; });
+        var data = scoresOverTime.map(function(item) { return item.score; });
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Score (%)',
+                    data: data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+
+});
+</script>
+{% endblock %}
+
+{% endblock %}
