@@ -7,7 +7,11 @@ SECRET_KEY = 'replace-me-for-production'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    'mental-ability-test-software.vercel.app',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
