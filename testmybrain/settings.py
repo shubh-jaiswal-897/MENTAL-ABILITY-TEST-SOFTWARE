@@ -5,12 +5,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'replace-me-for-production'
 
-DEBUG = True
+# ❗ Turn off debug in production
+DEBUG = False
 
+# ✅ Allow all Vercel deployments
 ALLOWED_HOSTS = [
+    '.vercel.app',   # handles all dynamic Vercel URLs
     '127.0.0.1',
     'localhost',
-    'mental-ability-test-software.vercel.app',
 ]
 
 INSTALLED_APPS = [
@@ -63,11 +65,9 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
 USE_TZ = True
 
 STATIC_URL = '/static/'
@@ -75,12 +75,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Authentication redirects
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
 
-# In your project's settings.py
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.43.119', '0.0.0.0']
-
-# Example using a typical private IP:
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.10', '0.0.0.0']
+# ✅ Required for Vercel (fix CSRF issues later)
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.vercel.app",
+]
