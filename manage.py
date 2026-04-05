@@ -16,3 +16,11 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Expose WSGI application for Vercel
+try:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'testmybrain.settings')
+    from django.core.wsgi import get_wsgi_application
+    app = get_wsgi_application()
+except Exception:
+    pass
