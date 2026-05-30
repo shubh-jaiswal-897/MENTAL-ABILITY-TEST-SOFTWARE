@@ -111,25 +111,37 @@ def contact(request):
     return render(request, 'contact.html', {'form': form})
 
 
+@login_required
 def test_session(request):
-    # Start or continue a test session. Requires login via URL decorator.
-    # Session keys used: 'test_qs' (list of question ids), 'test_index', 'test_start', 'test_score'
+    """
+    Handles the lifecycle of a test session.
+    Includes initialization, question navigation, timing, scoring, and result persistence.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Ensure user is authenticated (decorator already enforces, but keep guard for safety)
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    # Start a new test session
     if 'action' in request.GET and request.GET['action'] == 'start':
-        # initialize session
         subject_ids = request.GET.getlist('subjects')
         limit = request.GET.get('limit')
         if not subject_ids:
-            return render(request, 'test_session.html', {'error': 'Please select at least one subject.', 'subjects': Subject.objects.all()})
+            return render(request, 'test_session.html', {
+                'error': 'Please select at least one subject.',
+                'subjects': Subject.objects.all()
+            })
         qs_qs = Question.objects.filter(subject_id__in=subject_ids)
         qs_ids = list(qs_qs.values_list('id', flat=True))
 
-        # apply limit
+        # Apply limit
         try:
             limit_val = int(limit)
             if limit_val > 0:
                 qs_ids = qs_ids[:limit_val]
         except Exception:
-            # default to 10
             qs_ids = qs_ids[:10]
 
         if not qs_ids:
@@ -137,48 +149,37 @@ def test_session(request):
 
         random.shuffle(qs_ids)
         request.session['test_qs'] = qs_ids
-        # store selected subject names for attempt record
         request.session['test_subjects'] = ','.join([str(s) for s in subject_ids])
         request.session['test_index'] = 0
         request.session['test_score'] = 0
-        # store start as epoch seconds (float) to avoid timezone-aware parsing issues
         request.session['test_start'] = timezone.now().timestamp()
-        # compute duration: n questions * 20 seconds each
-        try:
-            duration_seconds = int(len(qs_ids)) * 20
-        except Exception:
-            duration_seconds = 3 * 60
-        request.session['test_duration'] = duration_seconds
+        request.session['test_duration'] = len(qs_ids) * 20  # 20 seconds per question
         return redirect('quiz:test_session')
 
+    # Retrieve session data
     qs = request.session.get('test_qs')
     if not qs:
-        # pass available subjects for the start form
-        from .models import Subject
         subjects = Subject.objects.all()
         return render(request, 'test_session.html', {'subjects': subjects})
 
-    # check timer (dynamic per-session)
     start_ts = request.session.get('test_start')
     if start_ts is None:
         return render(request, 'test_session.html', {'error': 'Session not initialized.'})
 
-    # calculate elapsed seconds using timestamps (float)
     elapsed_seconds = timezone.now().timestamp() - float(start_ts)
     duration_seconds = int(request.session.get('test_duration', 3 * 60))
     remaining_seconds = int(duration_seconds - elapsed_seconds)
     if remaining_seconds <= 0:
-        # time's up -> show result
         return redirect('quiz:test_result')
 
     index = int(request.session.get('test_index', 0))
+
+    # POST: process answer / navigation
     if request.method == 'POST':
-        # Recompute elapsed to protect against late POSTs
+        # Re‑calculate elapsed to protect against late submissions
         elapsed_seconds = timezone.now().timestamp() - float(start_ts)
         if elapsed_seconds >= duration_seconds:
-            # time expired; ignore answer and finish
-            # persist attempt with score so far
-            from .models import TestAttempt
+            # Time expired – finalize attempt with current score
             attempt = TestAttempt.objects.create(
                 user=request.user,
                 started_at=timezone.datetime.fromtimestamp(float(start_ts)),
@@ -186,49 +187,26 @@ def test_session(request):
                 score=int(request.session.get('test_score', 0)),
                 total=len(qs),
                 subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs])
+                questions=','.join([str(x) for x in qs]),
             )
             return redirect('quiz:test_result')
 
-        # process answer for current question (only if within time)
+        # Record selected choice
         try:
             selected = int(request.POST.get('choice'))
         except Exception:
             selected = None
 
         if index >= len(qs):
-    # calculate final score (same logic as later block)
-    from .models import Question, TestAttempt
-    score = 0
-    answers = request.session.get('test_answers', {})
-    for qid_str, choice_id in answers.items():
-        if choice_id:
-            try:
-                q = Question.objects.get(pk=int(qid_str))
-                choice = q.choices.get(pk=choice_id)
-                if choice.is_correct:
-                    score += 1
-            except:
-                pass
-    request.session['test_score'] = score
-    attempt = TestAttempt.objects.create(
-        user=request.user,
-        started_at=timezone.datetime.fromtimestamp(float(start_ts)),
-        finished_at=timezone.now(),
-        score=score,
-        total=len(qs),
-        subjects=request.session.get('test_subjects', ''),
-        questions=','.join([str(x) for x in qs])
-    )
-    return redirect('quiz:test_result')
-qid = qs[index]
+            return redirect('quiz:test_result')
+        qid = qs[index]
         answers = request.session.get('test_answers', {})
         answers[str(qid)] = selected
         request.session['test_answers'] = answers
 
         action = request.POST.get('action', 'next')
         if action == 'end':
-            # calculate final score
+            # Compute final score
             score = 0
             answers = request.session.get('test_answers', {})
             for qid_str, choice_id in answers.items():
@@ -238,11 +216,10 @@ qid = qs[index]
                         choice = q.choices.get(pk=choice_id)
                         if choice.is_correct:
                             score += 1
-                    except:
+                    except Exception:
                         pass
             request.session['test_score'] = score
-            # persist attempt
-            from .models import TestAttempt
+            # Persist attempt
             attempt = TestAttempt.objects.create(
                 user=request.user,
                 started_at=timezone.datetime.fromtimestamp(float(start_ts)),
@@ -250,7 +227,7 @@ qid = qs[index]
                 score=score,
                 total=len(qs),
                 subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs])
+                questions=','.join([str(x) for x in qs]),
             )
             return redirect('quiz:test_result')
         elif action == 'previous':
@@ -260,8 +237,9 @@ qid = qs[index]
 
         request.session['test_index'] = index
         if index >= len(qs):
-            # calculate final score
+            # Finalize test
             score = 0
+            answers = request.session.get('test_answers', {})
             for qid_str, choice_id in answers.items():
                 if choice_id:
                     try:
@@ -269,11 +247,9 @@ qid = qs[index]
                         choice = q.choices.get(pk=choice_id)
                         if choice.is_correct:
                             score += 1
-                    except:
+                    except Exception:
                         pass
             request.session['test_score'] = score
-            # persist attempt
-            from .models import TestAttempt
             attempt = TestAttempt.objects.create(
                 user=request.user,
                 started_at=timezone.datetime.fromtimestamp(float(start_ts)),
@@ -281,7 +257,7 @@ qid = qs[index]
                 score=score,
                 total=len(qs),
                 subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs])
+                questions=','.join([str(x) for x in qs]),
             )
             return redirect('quiz:test_result')
         elif index < 0:
@@ -289,11 +265,35 @@ qid = qs[index]
             request.session['test_index'] = 0
         return redirect('quiz:test_session')
 
-    # GET: show current question
+    # GET: render current question
     index = int(request.session.get('test_index', 0))
+    if index >= len(qs):
+        # Final calculation (same as above)
+        score = 0
+        answers = request.session.get('test_answers', {})
+        for qid_str, choice_id in answers.items():
+            if choice_id:
+                try:
+                    q = Question.objects.get(pk=int(qid_str))
+                    choice = q.choices.get(pk=choice_id)
+                    if choice.is_correct:
+                        score += 1
+                except Exception:
+                    pass
+        request.session['test_score'] = score
+        attempt = TestAttempt.objects.create(
+            user=request.user,
+            started_at=timezone.datetime.fromtimestamp(float(start_ts)),
+            finished_at=timezone.now(),
+            score=score,
+            total=len(qs),
+            subjects=request.session.get('test_subjects', ''),
+            questions=','.join([str(x) for x in qs]),
+        )
+        return redirect('quiz:test_result')
+
     qid = qs[index]
     question = Question.objects.get(pk=qid)
-    # shuffle choices for this question
     choices = list(question.choices.all())
     random.shuffle(choices)
     answers = request.session.get('test_answers', {})
@@ -306,8 +306,6 @@ qid = qs[index]
         'remaining_seconds': remaining_seconds,
         'selected_choice': selected_choice,
     })
-
-
 def test_result(request):
     score = int(request.session.get('test_score', 0))
     qs = request.session.get('test_qs', [])
