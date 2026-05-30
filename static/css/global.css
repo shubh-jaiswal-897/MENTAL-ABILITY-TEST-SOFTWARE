@@ -318,3 +318,32 @@ textarea.form-control { resize: vertical; min-height: 120px; }
 
 /* Responsive adjustments */
 @media (max-width: 991px) { .row > div { margin-bottom: 1.5rem; } }
+
+/* Dark mode for test session */
+body.dark-mode .card {
+    background-color: #2c2c2c;
+    color: #e0e0e0;
+    border-color: #444;
+}
+body.dark-mode .card-body {
+    background-color: #2c2c2c;
+    color: #e0e0e0;
+}
+body.dark-mode .btn-primary {
+    background-color: #0056b3;
+    border-color: #004085;
+    color: #fff;
+}
+body.dark-mode .btn-secondary {
+    background-color: #6c757d;
+    border-color: #565e64;
+    color: #fff;
+}
+body.dark-mode .btn-danger {
+    background-color: #c82333;
+    border-color: #bd2130;
+    color: #fff;
+}
+body.dark-mode .text-danger {
+    color: #ff6b6b;
+}
