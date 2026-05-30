@@ -196,7 +196,32 @@ def test_session(request):
         except Exception:
             selected = None
 
-        qid = qs[index]
+        if index >= len(qs):
+    # calculate final score (same logic as later block)
+    from .models import Question, TestAttempt
+    score = 0
+    answers = request.session.get('test_answers', {})
+    for qid_str, choice_id in answers.items():
+        if choice_id:
+            try:
+                q = Question.objects.get(pk=int(qid_str))
+                choice = q.choices.get(pk=choice_id)
+                if choice.is_correct:
+                    score += 1
+            except:
+                pass
+    request.session['test_score'] = score
+    attempt = TestAttempt.objects.create(
+        user=request.user,
+        started_at=timezone.datetime.fromtimestamp(float(start_ts)),
+        finished_at=timezone.now(),
+        score=score,
+        total=len(qs),
+        subjects=request.session.get('test_subjects', ''),
+        questions=','.join([str(x) for x in qs])
+    )
+    return redirect('quiz:test_result')
+qid = qs[index]
         answers = request.session.get('test_answers', {})
         answers[str(qid)] = selected
         request.session['test_answers'] = answers
