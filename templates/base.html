@@ -39,7 +39,10 @@
             </li>
           </ul>
 
-          <div class="d-flex">
+          <div class="d-flex align-items-center">
+            <button id="darkModeToggle" class="btn btn-outline-light btn-sm me-3" title="Toggle Dark Mode">
+              <i class="fas fa-moon"></i>
+            </button>
             {% if user.is_authenticated %}
               <span class="navbar-text me-2">Hello, {{ user.username }}</span>
               <form action="{% url 'logout' %}" method="post" style="display:inline">{% csrf_token %}
@@ -48,7 +51,6 @@
             {% else %}
               <a class="btn btn-primary btn-sm me-2" href="{% url 'quiz:signup' %}">Sign up</a>
               <a class="btn btn-primary btn-sm me-2" href="{% url 'login' %}">Student Login</a>
-              <a class="btn btn-outline-dark btn-sm" href="/admin/">Admin</a>
             {% endif %}
           </div>
         </div>
@@ -112,6 +114,27 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
           return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Dark Mode Logic
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        const icon = darkModeToggle.querySelector('i');
+
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-mode');
+            icon.classList.replace('fa-moon', 'fa-sun');
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('darkMode', 'enabled');
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                localStorage.setItem('darkMode', 'disabled');
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
         });
       });
     </script>
