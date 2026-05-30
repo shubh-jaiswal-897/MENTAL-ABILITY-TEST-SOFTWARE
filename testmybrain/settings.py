@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'replace-me-for-production')
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     '*',
@@ -59,7 +59,8 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 
 import dj_database_url
 
-DATABASE_URL = 'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
+# Use DATABASE_URL from environment variable (set in Vercel)
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     DATABASES = {
