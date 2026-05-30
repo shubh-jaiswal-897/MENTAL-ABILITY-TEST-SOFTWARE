@@ -285,3 +285,24 @@ body.dark-mode .modal-header, body.dark-mode .modal-footer {
     border-color: #333;
 }
 
+/* Additional Dark Mode Text Colors */
+body.dark-mode a {
+    color: #64b5f6;
+    text-decoration: underline;
+}
+body.dark-mode a:hover {
+    color: #42a5f5;
+    text-decoration: none;
+}
+body.dark-mode p,
+body.dark-mode li,
+body.dark-mode .nav-link,
+body.dark-mode .navbar-text,
+body.dark-mode .card-text,
+body.dark-mode .footer a {
+    color: #e0e0e0;
+}
+body.dark-mode .nav-link:hover {
+    color: #64b5f6 !important;
+}
+
