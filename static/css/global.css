@@ -306,3 +306,25 @@ body.dark-mode .nav-link:hover {
     color: #64b5f6 !important;
 }
 
+
+/* Contact page and generic form styling */
+.muted { color: #6c757d; }
+a { color: #0d6efd; }
+.mb-3 { margin-bottom: 1.5rem; }
+/* Enhanced form styling */
+.form-control { border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 12px 15px; transition: border-color 0.3s ease, box-shadow 0.3s ease; width: 100%; }
+.form-control:focus { box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25); border-color: #0d6efd; }
+textarea.form-control { resize: vertical; min-height: 120px; }
+/* Label styling with icons */
+.form-label { font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; }
+.form-label i { margin-right: 8px; color: #6c757d; }
+/* Error styling */
+.text-danger { display: flex; align-items: center; margin-top: 0.25rem; }
+.text-danger i { margin-right: 5px; }
+/* Button enhancements */
+.btn { border-radius: 8px; transition: all 0.3s ease; font-weight: 500; }
+#submit-btn { border-radius: 8px; transition: all 0.3s ease; font-weight: 500; background: linear-gradient(135deg, #007bff, #0056b3); border: none; padding: 10px 20px; color: white; cursor: pointer; }
+#submit-btn:hover { background: linear-gradient(135deg, #0056b3, #004085); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,123,255,0.3); }
+button[type="reset"]:hover { transform: translateY(-1px); }
+/* Responsive adjustments */
+@media (max-width: 991px) { .row > div { margin-bottom: 1.5rem; } }
