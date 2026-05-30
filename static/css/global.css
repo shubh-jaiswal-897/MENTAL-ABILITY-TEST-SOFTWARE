@@ -288,7 +288,7 @@ body.dark-mode .modal-header, body.dark-mode .modal-footer {
 /* Additional Dark Mode Text Colors */
 body.dark-mode a {
     color: #64b5f6;
-    text-decoration: underline;
+    text-decoration: none;
 }
 body.dark-mode a:hover {
     color: #42a5f5;
