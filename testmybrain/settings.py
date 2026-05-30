@@ -4,13 +4,17 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'replace-me-for-production')
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('1', 'true', 'yes')
+
 ALLOWED_HOSTS = [
     '*',
     '.vercel.app',   # handles all dynamic Vercel URLs
     '127.0.0.1',
     'localhost',
 ]
+
+# Required for Vercel's reverse proxy to handle HTTPS properly for CSRF
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
