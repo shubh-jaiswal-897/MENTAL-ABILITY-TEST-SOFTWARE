@@ -59,11 +59,8 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 
 import dj_database_url
 
-# Load database URL from environment variable, falling back to the hardcoded Supabase pooler URL
-DATABASE_URL = os.environ.get(
-    'DATABASE_URL',
-    'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
-)
+# Force the database URL to use the hardcoded working Supabase pooler URL
+DATABASE_URL = 'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
 
 if DATABASE_URL:
     DATABASES = {
