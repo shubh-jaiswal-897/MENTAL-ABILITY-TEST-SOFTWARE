@@ -59,7 +59,7 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 
 import dj_database_url
 
-# Use Supabase on Vercel, and SQLite for local development
+# Use Supabase on Vercel (via Environment Variable), and SQLite for local development
 if os.environ.get('VERCEL'):
     DATABASE_URL = os.environ.get(
         'DATABASE_URL',
