@@ -4,7 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'replace-me-for-production')
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', os.environ.get('DEBUG', 'False')).lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = [
     '*',
@@ -59,8 +59,14 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 
 import dj_database_url
 
-# Force the database URL to use the hardcoded working Supabase pooler URL
-DATABASE_URL = 'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
+# Use Supabase on Vercel, and SQLite for local development
+if os.environ.get('VERCEL'):
+    DATABASE_URL = os.environ.get(
+        'DATABASE_URL',
+        'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
+    )
+else:
+    DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     DATABASES = {
