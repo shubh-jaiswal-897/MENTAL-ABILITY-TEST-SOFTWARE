@@ -12,6 +12,20 @@ import random
 import json
 from django.db.models import Avg, Count
 
+def debug_db(request):
+    import traceback
+    from django.http import HttpResponse
+    from django.db import connection
+    try:
+        connection.ensure_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+            result = cursor.fetchone()
+        return HttpResponse(f"Connection successful! Result: {result}", content_type="text/plain")
+    except Exception as e:
+        tb = traceback.format_exc()
+        return HttpResponse(f"Error connecting to database:\n{e}\n\nTraceback:\n{tb}", content_type="text/plain", status=500)
+
 def index(request):
     # Home page: do not show the full question list here.
     # Keep this page as a landing area; questions are available on the Revision page.

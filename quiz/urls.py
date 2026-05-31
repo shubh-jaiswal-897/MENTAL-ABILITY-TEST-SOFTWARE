@@ -6,6 +6,7 @@ app_name = 'quiz'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('debug-db/', views.debug_db, name='debug_db'),
     path('question/<int:pk>/', views.take_quiz, name='take_quiz'),
     path('result/<int:pk>/<int:correct>/', views.result, name='result'),
     path('accounts/signup/', views.signup, name='signup'),
