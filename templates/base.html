@@ -8,8 +8,159 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🧠</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}?v=1.3">
     {% block extra_head %}{% endblock %}
+    <style>
+      /* Inline Dark Mode Override to bypass browser static file cache locks */
+      body.dark-mode {
+          background-color: #0B0C10 !important;
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .navbar {
+          background-color: #1F2833 !important;
+          border-bottom: 1px solid rgba(197, 198, 199, 0.2) !important;
+      }
+      body.dark-mode .navbar-brand,
+      body.dark-mode .navbar-brand i {
+          color: #D4AF37 !important;
+      }
+      body.dark-mode .nav-link {
+          color: #C5C6C7 !important;
+      }
+      body.dark-mode .nav-link:hover,
+      body.dark-mode .nav-link.active,
+      body.dark-mode .nav-link:focus {
+          color: #D4AF37 !important;
+      }
+      body.dark-mode .navbar-text {
+          color: #C5C6C7 !important;
+      }
+      body.dark-mode .card,
+      body.dark-mode .card-body {
+          background-color: #1F2833 !important;
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .card {
+          border: 1px solid rgba(197, 198, 199, 0.15) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+      }
+      body.dark-mode .card:hover {
+          border-color: rgba(212, 175, 55, 0.4) !important;
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5) !important;
+      }
+      body.dark-mode h1, 
+      body.dark-mode h2, 
+      body.dark-mode h3, 
+      body.dark-mode h4, 
+      body.dark-mode h5, 
+      body.dark-mode h6,
+      body.dark-mode p,
+      body.dark-mode li,
+      body.dark-mode span,
+      body.dark-mode label,
+      body.dark-mode div:not(.bg-light):not(.carousel-item):not(.carousel-caption) {
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .text-muted,
+      body.dark-mode .muted,
+      body.dark-mode .form-text,
+      body.dark-mode small {
+          color: #C5C6C7 !important;
+      }
+      body.dark-mode a {
+          color: #D4AF37 !important;
+      }
+      body.dark-mode a:hover {
+          color: #f3cf65 !important;
+      }
+      body.dark-mode .form-control,
+      body.dark-mode .form-select,
+      body.dark-mode select {
+          background-color: #0B0C10 !important;
+          color: #E5E9F0 !important;
+          border: 1px solid rgba(197, 198, 199, 0.3) !important;
+      }
+      body.dark-mode .form-control:focus,
+      body.dark-mode .form-select:focus,
+      body.dark-mode select:focus {
+          border-color: #D4AF37 !important;
+          box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.25) !important;
+      }
+      body.dark-mode .btn-primary,
+      body.dark-mode #submit-btn {
+          background-color: #D4AF37 !important;
+          border-color: #D4AF37 !important;
+          color: #0B0C10 !important;
+      }
+      body.dark-mode .btn-primary:hover,
+      body.dark-mode #submit-btn:hover {
+          background-color: #f3cf65 !important;
+          border-color: #f3cf65 !important;
+      }
+      body.dark-mode .btn-secondary,
+      body.dark-mode .btn-outline-secondary {
+          background-color: transparent !important;
+          border: 1px solid #C5C6C7 !important;
+          color: #C5C6C7 !important;
+      }
+      body.dark-mode .btn-secondary:hover,
+      body.dark-mode .btn-outline-secondary:hover {
+          background-color: #C5C6C7 !important;
+          color: #0B0C10 !important;
+      }
+      body.dark-mode .btn-outline-primary {
+          color: #D4AF37 !important;
+          border-color: #D4AF37 !important;
+          background-color: transparent !important;
+      }
+      body.dark-mode .btn-outline-primary:hover {
+          background-color: #D4AF37 !important;
+          color: #0B0C10 !important;
+      }
+      body.dark-mode .btn-outline-success {
+          color: #D4AF37 !important;
+          border-color: #D4AF37 !important;
+      }
+      body.dark-mode .btn-outline-success:hover {
+          background-color: #D4AF37 !important;
+          color: #0B0C10 !important;
+      }
+      body.dark-mode .btn-danger {
+          background-color: #e03131 !important;
+          border-color: #e03131 !important;
+          color: #fff !important;
+      }
+      body.dark-mode .btn-danger:hover {
+          background-color: #c92a2a !important;
+      }
+      body.dark-mode .table {
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .table thead th {
+          background-color: #1F2833 !important;
+          border-bottom: 2px solid rgba(197, 198, 199, 0.3) !important;
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .table-striped>tbody>tr:nth-of-type(odd)>* {
+          background-color: rgba(31, 40, 51, 0.5) !important;
+          color: #E5E9F0 !important;
+      }
+      body.dark-mode .list-group-item {
+          background-color: #1F2833 !important;
+          color: #E5E9F0 !important;
+          border-color: rgba(197, 198, 199, 0.15) !important;
+      }
+      body.dark-mode .bg-light {
+          background-color: #1F2833 !important;
+      }
+      body.dark-mode #darkModeToggle {
+          border-color: #D4AF37 !important;
+          color: #D4AF37 !important;
+      }
+      body.dark-mode #darkModeToggle:hover {
+          background-color: rgba(212, 175, 55, 0.1) !important;
+      }
+    </style>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
       <div class="container-fluid">
@@ -92,51 +243,112 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // Add interactivity
-      document.addEventListener('DOMContentLoaded', function() {
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-          anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-              behavior: 'smooth'
+      (function() {
+        function initInteractivity() {
+          console.log("Initializing Mental Ability Test interactivity...");
+
+          // Smooth scrolling for anchor links
+          try {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+              anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                  target.scrollIntoView({ behavior: 'smooth' });
+                }
+              });
             });
-          });
-        });
+          } catch (e) {
+            console.warn("Smooth scroll init failed:", e);
+          }
 
-        // Add fade-in animation to content
-        const content = document.querySelector('.container.mt-4');
-        if (content) {
-          content.classList.add('fade-in-up');
-        }
-
-        // Tooltip initialization
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Dark Mode Logic
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const body = document.body;
-        const icon = darkModeToggle.querySelector('i');
-
-        if (localStorage.getItem('darkMode') === 'enabled') {
-            body.classList.add('dark-mode');
-            icon.classList.replace('fa-moon', 'fa-sun');
-        }
-
-        darkModeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('darkMode', 'enabled');
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                localStorage.setItem('darkMode', 'disabled');
-                icon.classList.replace('fa-sun', 'fa-moon');
+          // Add fade-in animation to content
+          try {
+            const content = document.querySelector('.container.mt-4');
+            if (content) {
+              content.classList.add('fade-in-up');
             }
-        });
-      });
+          } catch (e) {
+            console.warn("Fade-in animation failed:", e);
+          }
+
+          // Tooltip initialization
+          try {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+              return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+          } catch (e) {
+            console.warn("Tooltip initialization failed:", e);
+          }
+
+          // Dark Mode Logic
+          try {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+            const icon = darkModeToggle ? darkModeToggle.querySelector('i') : null;
+
+            function updateIcon(isDark) {
+              if (icon) {
+                if (isDark) {
+                  icon.className = 'fas fa-sun';
+                } else {
+                  icon.className = 'fas fa-moon';
+                }
+              }
+            }
+
+            let isDark = false;
+            try {
+              isDark = localStorage.getItem('darkMode') === 'enabled';
+            } catch (e) {
+              console.warn("Could not read from localStorage:", e);
+            }
+
+            // Apply theme on load
+            if (isDark) {
+              body.classList.add('dark-mode');
+              updateIcon(true);
+            } else {
+              body.classList.remove('dark-mode');
+              updateIcon(false);
+            }
+
+            if (darkModeToggle) {
+              darkModeToggle.addEventListener('click', function() {
+                try {
+                  const currentlyDark = body.classList.toggle('dark-mode');
+                  
+                  try {
+                    localStorage.setItem('darkMode', currentlyDark ? 'enabled' : 'disabled');
+                  } catch (e) {
+                    console.warn("Could not write to localStorage:", e);
+                  }
+
+                  updateIcon(currentlyDark);
+                  
+                  // Dispatch custom event
+                  window.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDarkMode: currentlyDark } }));
+                  console.log("Theme toggled. Dark mode active:", currentlyDark);
+                } catch (err) {
+                  console.error("Error toggling dark mode class:", err);
+                }
+              });
+            } else {
+              console.error("Dark Mode toggle button not found in DOM!");
+            }
+          } catch (e) {
+            console.error("Dark Mode initiation failed:", e);
+          }
+        }
+
+        // Run setup immediately or when ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initInteractivity);
+        } else {
+          initInteractivity();
+        }
+      })();
     </script>
   </body>
 </html>

@@ -252,31 +252,102 @@ document.addEventListener('DOMContentLoaded', function() {
     // Chart.js for Scores Over Time
     var scoresOverTime = {{ scores_over_time|safe }};
     if (scoresOverTime.length > 0) {
-        var ctx = document.getElementById('scoresChart').getContext('2d');
         var labels = scoresOverTime.map(function(item) { return item.date; });
         var data = scoresOverTime.map(function(item) { return item.score; });
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Score (%)',
-                    data: data,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderWidth: 2,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100
+        var chartInstance = null;
+
+        function renderChart() {
+            var canvas = document.getElementById('scoresChart');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var isDarkMode = document.body.classList.contains('dark-mode');
+            
+            // Accent Color: Champagne Gold (#D4AF37), default: primary blue (#007bff)
+            var lineColor = isDarkMode ? '#D4AF37' : '#007bff';
+            var bgColor = isDarkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0, 123, 255, 0.1)';
+            var textColor = isDarkMode ? '#E5E9F0' : '#333';
+            var gridColor = isDarkMode ? 'rgba(197, 198, 199, 0.15)' : 'rgba(0, 0, 0, 0.08)';
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Score (%)',
+                        data: data,
+                        borderColor: lineColor,
+                        backgroundColor: bgColor,
+                        borderWidth: 3,
+                        pointBackgroundColor: lineColor,
+                        pointBorderColor: isDarkMode ? '#0B0C10' : '#fff',
+                        pointHoverBackgroundColor: isDarkMode ? '#fff' : '#007bff',
+                        pointHoverBorderColor: lineColor,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                font: {
+                                    family: "'Segoe UI', 'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: isDarkMode ? '#1F2833' : '#333',
+                            titleColor: isDarkMode ? '#E5E9F0' : '#fff',
+                            bodyColor: isDarkMode ? '#E5E9F0' : '#fff',
+                            borderColor: isDarkMode ? '#D4AF37' : 'transparent',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: gridColor
+                            },
+                            ticks: {
+                                color: textColor,
+                                font: {
+                                    family: "'Segoe UI', sans-serif"
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: gridColor
+                            },
+                            ticks: {
+                                color: textColor,
+                                font: {
+                                    family: "'Segoe UI', sans-serif"
+                                }
+                            }
+                        }
                     }
                 }
-            }
+            });
+        }
+
+        renderChart();
+
+        window.addEventListener('themeChanged', function() {
+            renderChart();
         });
     }
 

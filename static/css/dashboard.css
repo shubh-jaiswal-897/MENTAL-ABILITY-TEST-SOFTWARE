@@ -182,6 +182,73 @@
     border-top-color: #333;
 }
 
+/* Premium Dark Mode Overrides for Dashboard */
+body.dark-mode .dashboard-title {
+    color: #E5E9F0 !important;
+}
+
+body.dark-mode .stat-card {
+    background: linear-gradient(135deg, #1F2833 0%, #0B0C10 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    color: #E5E9F0 !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .stat-icon i {
+    color: #D4AF37 !important;
+}
+
+body.dark-mode .chart-card {
+    background: #1F2833 !important;
+    border: 1px solid rgba(197, 198, 199, 0.15) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .chart-card h4 {
+    color: #E5E9F0 !important;
+}
+
+body.dark-mode .recommendations-card {
+    background: linear-gradient(135deg, #1F2833 0%, #0b0c10 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    color: #E5E9F0 !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .recommendations-card h4 {
+    color: #E5E9F0 !important;
+}
+
+body.dark-mode .collapsible-section .collapsible-header:hover {
+    background-color: #0B0C10 !important;
+    padding: 5px;
+}
+
+body.dark-mode #subject-filter {
+    background-color: #0B0C10 !important;
+    color: #E5E9F0 !important;
+    border: 1px solid rgba(197, 198, 199, 0.3) !important;
+}
+
+/* Progress bar dark mode adaptation */
+body.dark-mode .progress {
+    background-color: #0B0C10 !important;
+}
+
+/* Custom scrollbar for tables in dark mode */
+body.dark-mode .table-responsive::-webkit-scrollbar-track {
+    background: #0B0C10 !important;
+}
+
+body.dark-mode .table-responsive::-webkit-scrollbar-thumb {
+    background: #1F2833 !important;
+    border: 1px solid #C5C6C7 !important;
+}
+
+body.dark-mode .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #D4AF37 !important;
+}
+
 
 
 

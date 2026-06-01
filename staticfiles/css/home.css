@@ -126,3 +126,14 @@
         margin-bottom: 1rem;
     }
 }
+
+/* Premium Dark Mode Overrides for Home page elements */
+body.dark-mode .container.my-5 h2 {
+    color: #E5E9F0 !important;
+}
+body.dark-mode .container.my-5 .lead {
+    color: #C5C6C7 !important;
+}
+body.dark-mode .container.my-5 p {
+    color: #C5C6C7 !important;
+}
