@@ -48,6 +48,12 @@
     margin-bottom: 20px;
 }
 
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
 .chart-card h4 {
     color: #333;
     margin-bottom: 20px;
