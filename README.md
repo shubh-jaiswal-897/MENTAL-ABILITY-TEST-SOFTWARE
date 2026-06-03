@@ -1,5 +1,5 @@
-id  == "shubh111"
-pas == "shubh111"
+id  == "shubh1111"
+pas == "shubh1111"
 MENTAL ABILITY TEST SOFTWARE - minimal Django quiz app
 
 Quick start (Windows PowerShell):
