@@ -2,6 +2,8 @@ id  == "shubh1111"
 pas == "shubh1111"
 MENTAL ABILITY TEST SOFTWARE - minimal Django quiz app
 
+**Live Demo**: https://mental-ability-test-softwares.vercel.app/
+
 Quick start (Windows PowerShell):
 
 1. Create and activate a virtualenv
