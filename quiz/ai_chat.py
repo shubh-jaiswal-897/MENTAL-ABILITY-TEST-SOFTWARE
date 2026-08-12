@@ -38,8 +38,8 @@ def fetch_ollama_models():
         pass
     return []
 
-def query_groq_api(messages_payload, model="llama-3.1-8b-instant"):
-    """Cloud fallback using free Groq API if GROQ_API_KEY environment variable is configured."""
+def query_groq_api(messages_payload, model="llama-3.2-1b-preview"):
+    """Cloud AI online hosting using free Groq API (Llama 3.2 1B Cloud)."""
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         return None
@@ -246,13 +246,13 @@ def ollama_chat_view(request):
     except Exception as e:
         print(f"[BrainBot AI] Local Ollama error or timeout ({e}). Trying cloud/smart fallback...")
 
-    # --- Tier 2: Try Free Cloud API (Groq) if GROQ_API_KEY present ---
+    # --- Tier 2: Try Free Cloud AI (Groq API Llama 3.2 1B Online Host) ---
     cloud_reply = query_groq_api(messages_payload)
     if cloud_reply:
         return JsonResponse({
             "success": True,
             "source": "cloud_groq",
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.2-1b-preview",
             "response": cloud_reply
         })
 
