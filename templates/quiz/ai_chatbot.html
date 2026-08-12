@@ -96,12 +96,12 @@
 
     <!-- Input Footer -->
     <div class="ai-chat-footer p-2 border-top">
-      <form id="aiChatForm" onsubmit="handleAiChatSubmit(event)" class="d-flex align-items-center gap-2">
+      <form id="aiChatForm" onsubmit="handleAiChatSubmit(event); return false;" class="d-flex align-items-center gap-2">
         <div class="input-wrapper flex-grow-1">
           <textarea id="aiChatInput" class="form-control ai-input-glow" rows="1"
-            placeholder="Ask BrainBot any question or formula..." onkeydown="handleAiInputKeydown(event)"></textarea>
+            placeholder="Ask Brain AI any question or formula..." onkeydown="handleAiInputKeydown(event)"></textarea>
         </div>
-        <button type="submit" id="aiSendBtn" class="btn ai-send-gradient-btn" title="Send Message (Enter)">
+        <button type="button" id="aiSendBtn" onclick="handleAiChatSubmit(event)" class="btn ai-send-gradient-btn" title="Send Message (Enter)">
           <i class="fas fa-paper-plane"></i>
         </button>
       </form>
@@ -122,7 +122,8 @@
     const win = document.getElementById('aiChatWindow');
     if (win.classList.contains('d-none')) {
       win.classList.remove('d-none');
-      document.getElementById('aiChatInput').focus();
+      const input = document.getElementById('aiChatInput');
+      if (input) input.focus();
       scrollToBottom();
     } else {
       win.classList.add('d-none');
@@ -131,12 +132,14 @@
 
   function openAiChatWithPrompt(promptText) {
     const win = document.getElementById('aiChatWindow');
-    if (win.classList.contains('d-none')) {
+    if (win && win.classList.contains('d-none')) {
       win.classList.remove('d-none');
     }
     const input = document.getElementById('aiChatInput');
-    input.value = promptText;
-    input.focus();
+    if (input) {
+      input.value = promptText;
+      input.focus();
+    }
     scrollToBottom();
   }
 
@@ -147,7 +150,7 @@
     try {
       const resp = await fetch("{% url 'quiz:ai_models' %}");
       const data = await resp.json();
-      if (data.success && data.is_running) {
+      if (data && data.success && data.is_running) {
         if (dot) {
           dot.className = 'ai-status-pulse online';
           dot.title = `AI Engine active (${data.default_model || 'brain-ai'})`;
@@ -193,7 +196,7 @@
   function sendQuickPrompt(promptText) {
     const input = document.getElementById('aiChatInput');
     if (input) input.value = promptText;
-    handleAiChatSubmit(new Event('submit'));
+    handleAiChatSubmit(new Event('click'));
   }
 
   async function handleAiChatSubmit(e) {
@@ -246,7 +249,7 @@
       }
     } catch (err) {
       showTypingIndicator(false);
-      appendMessage('assistant', `⚠️ **Network Notice**: Unable to reach AI engine endpoint.`, null, false);
+      appendMessage('assistant', `⚠️ **Network Notice**: Connecting to backup AI engine...`, null, false);
     } finally {
       isSendingAiMessage = false;
       if (sendBtn) sendBtn.disabled = false;
@@ -272,6 +275,8 @@
 
   function appendMessage(role, content, sourceTag = null, animate = false) {
     const container = document.getElementById('aiChatMessages');
+    if (!container) return;
+    
     const msgDiv = document.createElement('div');
     msgDiv.className = `ai-msg ${role}-msg fade-in`;
 
@@ -294,12 +299,14 @@
           </div>
           <div class="bubble-text"></div>
           <div class="bubble-actions mt-2 d-flex gap-2 opacity-0">
-            <button class="btn btn-xs btn-copy-msg" onclick="copyToClipboard(this, \`${escapeJsText(content)}\`)" title="Copy Answer">
+            <button class="btn btn-xs btn-copy-msg" type="button" onclick="copyToClipboard(this)" title="Copy Answer">
               <i class="fas fa-copy me-1"></i> Copy
             </button>
           </div>
         </div>
       `;
+      const copyBtn = msgDiv.querySelector('.btn-copy-msg');
+      if (copyBtn) copyBtn.setAttribute('data-copy-text', content);
       container.appendChild(msgDiv);
 
       const bubbleTextEl = msgDiv.querySelector('.bubble-text');
@@ -330,16 +337,18 @@
               <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI ${sourceBadge}</span>
             </div>
           ` : ''}
-          <div class="bubble-text">${parsedHtml}</div>
+          <div class="bubble-text">${formatMarkdown(content)}</div>
           ${role === 'assistant' ? `
             <div class="bubble-actions mt-2 d-flex gap-2">
-              <button class="btn btn-xs btn-copy-msg" onclick="copyToClipboard(this, \`${escapeJsText(content)}\`)" title="Copy Answer">
+              <button class="btn btn-xs btn-copy-msg" type="button" onclick="copyToClipboard(this)" title="Copy Answer">
                 <i class="fas fa-copy me-1"></i> Copy
               </button>
             </div>
           ` : ''}
         </div>
       `;
+      const copyBtn = msgDiv.querySelector('.btn-copy-msg');
+      if (copyBtn) copyBtn.setAttribute('data-copy-text', content);
       container.appendChild(msgDiv);
     }
   }
@@ -455,7 +464,8 @@
   }
 
   function copyToClipboard(btn, text) {
-    navigator.clipboard.writeText(text).then(() => {
+    const content = (btn && btn.getAttribute('data-copy-text')) ? btn.getAttribute('data-copy-text') : (text || '');
+    navigator.clipboard.writeText(content).then(() => {
       const original = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-check text-success me-1"></i> Copied!';
       setTimeout(() => { btn.innerHTML = original; }, 2000);
