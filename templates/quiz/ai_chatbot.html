@@ -111,7 +111,7 @@
 
 <script>
   let aiConversationHistory = [];
-  let currentAiModel = 'llama3.2:1b';
+  let currentAiModel = 'brain-ai';
 
   document.addEventListener('DOMContentLoaded', function () {
     loadAiChatHistory();
@@ -147,25 +147,33 @@
     try {
       const resp = await fetch("{% url 'quiz:ai_models' %}");
       const data = await resp.json();
-      if (data.success && data.is_running && data.models.length > 0) {
-        dot.className = 'ai-status-pulse online';
-        dot.title = `AI Engine active (${data.models.length} model(s) detected)`;
-
-        select.innerHTML = '';
-        data.models.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m;
-          opt.innerText = m;
-          if (m === data.default_model) opt.selected = true;
-          select.appendChild(opt);
-        });
-        currentAiModel = select.value;
+      if (data.success && data.is_running) {
+        if (dot) {
+          dot.className = 'ai-status-pulse online';
+          dot.title = `AI Engine active (${data.default_model || 'brain-ai'})`;
+        }
+        if (data.default_model) {
+          currentAiModel = data.default_model;
+        }
+        if (select && Array.isArray(data.models)) {
+          select.innerHTML = '';
+          data.models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.innerText = m;
+            if (m === data.default_model) opt.selected = true;
+            select.appendChild(opt);
+          });
+          if (select.value) currentAiModel = select.value;
+        }
       } else {
-        dot.className = 'ai-status-pulse hybrid';
-        dot.title = 'Hybrid AI Engine Ready (Cloud & Smart Solver Active)';
+        if (dot) {
+          dot.className = 'ai-status-pulse hybrid';
+          dot.title = 'Hybrid AI Engine Ready (Cloud & Smart Solver Active)';
+        }
       }
     } catch (e) {
-      dot.className = 'ai-status-pulse hybrid';
+      if (dot) dot.className = 'ai-status-pulse hybrid';
     }
   }
 

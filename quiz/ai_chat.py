@@ -242,7 +242,7 @@ def ollama_chat_view(request):
                 },
                 method="POST"
             )
-            with urllib.request.urlopen(req, timeout=2.5) as resp:
+            with urllib.request.urlopen(req, timeout=45) as resp:
                 if resp.status == 200:
                     resp_json = json.loads(resp.read().decode("utf-8"))
                     content = resp_json.get("message", {}).get("content", "").strip()
