@@ -225,7 +225,7 @@
 
       if (data.success) {
         const reply = data.response;
-        appendMessage('assistant', reply, data.source);
+        appendMessage('assistant', reply, data.source, true);
         aiConversationHistory.push({ role: 'assistant', content: reply });
         saveAiChatHistory();
       } else {
@@ -240,7 +240,7 @@
     scrollToBottom();
   }
 
-  function appendMessage(role, content, sourceTag = null) {
+  function appendMessage(role, content, sourceTag = null, animate = false) {
     const container = document.getElementById('aiChatMessages');
     const msgDiv = document.createElement('div');
     msgDiv.className = `ai-msg ${role}-msg fade-in`;
@@ -248,26 +248,62 @@
     const avatarIcon = role === 'user' ? 'fa-user-astronaut' : 'fa-robot';
     const parsedHtml = formatMarkdown(content);
 
-    msgDiv.innerHTML = `
-      <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
-      <div class="msg-bubble ${role}-bubble">
-        ${role === 'assistant' ? `
+    if (role === 'assistant' && animate) {
+      msgDiv.innerHTML = `
+        <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
+        <div class="msg-bubble ${role}-bubble">
           <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
             <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> BrainBot AI</span>
           </div>
-        ` : ''}
-        <div class="bubble-text">${parsedHtml}</div>
-        ${role === 'assistant' ? `
-          <div class="bubble-actions mt-2 d-flex gap-2">
+          <div class="bubble-text"></div>
+          <div class="bubble-actions mt-2 d-flex gap-2 opacity-0">
             <button class="btn btn-xs btn-copy-msg" onclick="copyToClipboard(this, \`${escapeJsText(content)}\`)" title="Copy Answer">
               <i class="fas fa-copy me-1"></i> Copy
             </button>
           </div>
-        ` : ''}
-      </div>
-    `;
+        </div>
+      `;
+      container.appendChild(msgDiv);
 
-    container.appendChild(msgDiv);
+      const bubbleTextEl = msgDiv.querySelector('.bubble-text');
+      const actionsEl = msgDiv.querySelector('.bubble-actions');
+      const words = content.split(' ');
+      let currentWordIndex = 0;
+      let currentTextAccumulator = '';
+
+      const typingTimer = setInterval(() => {
+        if (currentWordIndex < words.length) {
+          currentTextAccumulator += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex];
+          bubbleTextEl.innerHTML = formatMarkdown(currentTextAccumulator);
+          currentWordIndex++;
+          scrollToBottom();
+        } else {
+          clearInterval(typingTimer);
+          if (actionsEl) actionsEl.classList.remove('opacity-0');
+          scrollToBottom();
+        }
+      }, 15);
+    } else {
+      msgDiv.innerHTML = `
+        <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
+        <div class="msg-bubble ${role}-bubble">
+          ${role === 'assistant' ? `
+            <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
+              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> BrainBot AI</span>
+            </div>
+          ` : ''}
+          <div class="bubble-text">${parsedHtml}</div>
+          ${role === 'assistant' ? `
+            <div class="bubble-actions mt-2 d-flex gap-2">
+              <button class="btn btn-xs btn-copy-msg" onclick="copyToClipboard(this, \`${escapeJsText(content)}\`)" title="Copy Answer">
+                <i class="fas fa-copy me-1"></i> Copy
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      container.appendChild(msgDiv);
+    }
   }
 
   function showTypingIndicator(show) {
@@ -313,7 +349,7 @@
         aiConversationHistory = JSON.parse(saved);
         if (Array.isArray(aiConversationHistory) && aiConversationHistory.length > 0) {
           aiConversationHistory.forEach(m => {
-            appendMessage(m.role, m.content);
+            appendMessage(m.role, m.content, null, false);
           });
         }
       }
@@ -327,19 +363,38 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-    // Code blocks ``` ... ```
-    html = html.replace(/```([\s\S]*?)```/g, '<pre class="ai-code-block"><code>$1</code></pre>');
+    // Display Math $$ ... $$
+    html = html.replace(/\$\$([\s\S]*?)\$\$/g, '<div class="math-formula-block">$1</div>');
+    // Inline Math $ ... $
+    html = html.replace(/\$([^$]+)\$/g, '<strong class="text-amber font-monospace">$1</strong>');
+
+    // ChatGPT Style Fenced Code blocks ```lang ... ```
+    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+      const language = lang.trim() || 'code';
+      return `
+        <div class="chatgpt-code-wrapper my-2">
+          <div class="chatgpt-code-header font-monospace d-flex justify-content-between align-items-center px-3 py-1">
+            <span class="small text-uppercase"><i class="fas fa-code me-1 text-amber"></i>${language}</span>
+            <button class="btn-copy-code" type="button" onclick="copyCodeSnippet(this)" title="Copy Code"><i class="fas fa-copy me-1"></i>Copy code</button>
+          </div>
+          <pre class="ai-code-block m-0 p-3"><code>${code.trim()}</code></pre>
+        </div>
+      `;
+    });
+
     // Inline code `...`
     html = html.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+
     // Headings ### ...
-    html = html.replace(/^### (.*$)/gim, '<h6 class="fw-bold text-amber mt-2 mb-1">$1</h6>');
+    html = html.replace(/^### (.*$)/gim, '<h6 class="fw-bold text-amber mt-3 mb-2">$1</h6>');
     html = html.replace(/^#### (.*$)/gim, '<strong class="text-info font-monospace d-block mt-2 mb-1">$1</strong>');
+
     // Bold **...**
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     // Italic *...*
     html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     // Lists
-    html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ms-3">$1</li>');
+    html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ms-3 mb-1">$1</li>');
     // Newlines
     html = html.replace(/\n/g, '<br>');
 
@@ -348,6 +403,17 @@
 
   function escapeJsText(str) {
     return str.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  }
+
+  function copyCodeSnippet(btn) {
+    const codeBlock = btn.closest('.chatgpt-code-wrapper').querySelector('code');
+    if (codeBlock) {
+      navigator.clipboard.writeText(codeBlock.innerText).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check text-success me-1"></i>Copied!';
+        setTimeout(() => { btn.innerHTML = original; }, 2000);
+      });
+    }
   }
 
   function copyToClipboard(btn, text) {

@@ -962,6 +962,67 @@ body {
     font-size: 0.82rem;
 }
 
+/* ChatGPT Style Code Block & Typing Formatting */
+.chatgpt-code-wrapper {
+    background-color: var(--lc-surface-hover);
+    border: 1px solid var(--lc-border-highlight);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.chatgpt-code-header {
+    background-color: var(--lc-surface);
+    border-bottom: 1px solid var(--lc-border-highlight);
+    color: var(--lc-text-muted);
+    font-size: 0.75rem;
+}
+
+.btn-copy-code {
+    background: transparent;
+    border: 1px solid var(--lc-border-highlight);
+    color: var(--lc-text-muted);
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-code:hover {
+    color: var(--lc-amber);
+    border-color: var(--lc-amber);
+    background-color: var(--lc-surface-hover);
+}
+
+.btn-copy-msg {
+    background: var(--lc-surface-hover);
+    border: 1px solid var(--lc-border-highlight);
+    color: var(--lc-text-muted);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-copy-msg:hover {
+    color: var(--lc-amber);
+    border-color: var(--lc-amber);
+}
+
+.math-formula-block {
+    background: var(--lc-surface-hover);
+    border-left: 3px solid var(--lc-amber);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 6px 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.88rem;
+    color: var(--lc-text);
+}
+
+
 /* ==========================================================================
    🎨 Standardized Form Elements, Code Tags & Alerts Theme Bindings
    ========================================================================== */
