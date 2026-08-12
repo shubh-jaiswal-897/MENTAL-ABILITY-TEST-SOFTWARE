@@ -161,9 +161,9 @@
                     {% endif %}
                   </td>
                   <td>
-                    {% if att.total > 0 and att.score == att.total %}
+                    {% if att.is_perfect %}
                       <span class="badge badge-easy"><i class="fas fa-check-circle me-1"></i>PERFECT 🎯</span>
-                    {% elif att.score >= 1 %}
+                    {% elif att.is_passed %}
                       <span class="badge badge-medium"><i class="fas fa-bolt me-1"></i>PASSED ⚡</span>
                     {% else %}
                       <span class="badge badge-hard"><i class="fas fa-redo me-1"></i>TRY AGAIN</span>

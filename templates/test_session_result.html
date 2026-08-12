@@ -7,15 +7,15 @@
   <div class="col-lg-6 text-center">
     <div class="lc-card p-5" style="background-color: var(--lc-surface); color: var(--lc-text); border: 1px solid var(--lc-amber);">
       <div class="mb-3">
-        {% if percentage >= 80 %}
+        {% if percentage == 100 %}
           <div class="text-warning fs-1"><i class="fas fa-trophy"></i></div>
-          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Victory! Exceptional Work</h3>
-        {% elif percentage >= 50 %}
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Victory! Perfect Score 🎯</h3>
+        {% elif percentage >= 33 %}
           <div class="text-info fs-1"><i class="fas fa-medal"></i></div>
-          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Good Attempt! Keep Pushing</h3>
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Passed! Good Attempt ⚡</h3>
         {% else %}
           <div class="text-secondary fs-1"><i class="fas fa-redo"></i></div>
-          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Completed</h3>
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Completed - Try Again</h3>
         {% endif %}
       </div>
 

@@ -72,6 +72,29 @@ class TestAttempt(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.started_at:%Y-%m-%d %H:%M}"
 
+    @property
+    def percentage(self):
+        if self.total > 0:
+            return round((self.score / self.total) * 100, 1)
+        return 0.0
+
+    @property
+    def is_perfect(self):
+        return self.total > 0 and self.score == self.total
+
+    @property
+    def is_passed(self):
+        return self.percentage >= 33.0
+
+    @property
+    def status_label(self):
+        if self.is_perfect:
+            return "PERFECT 🎯"
+        elif self.is_passed:
+            return "PASSED ⚡"
+        else:
+            return "TRY AGAIN"
+
 
 # New model: store contact.html submissions
 class ContactSubmission(models.Model):
