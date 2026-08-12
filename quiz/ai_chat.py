@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-DEFAULT_MODEL = "llama3.2:1b"
+DEFAULT_MODEL = "brain-ai"
 
 SYSTEM_PROMPT = {
     "role": "system",
