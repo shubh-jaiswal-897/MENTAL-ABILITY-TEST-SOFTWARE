@@ -1,17 +1,17 @@
 <!-- Cyberpunk Glassmorphism Floating AI Chatbot Widget -->
 <div id="aiChatbotContainer" class="ai-chatbot-wrapper">
   <!-- Launcher Button -->
-  <button id="aiChatLauncher" class="ai-launcher-btn" onclick="toggleAiChatbot()" title="Open BrainBot Cyber AI Tutor">
+  <button id="aiChatLauncher" class="ai-launcher-btn" onclick="toggleAiChatbot()" title="Open Brain AI Tutor">
     <div class="ai-launcher-glow"></div>
     <div class="ai-launcher-icon">
       <i class="fas fa-brain-circuit"></i>
-      <i class="fas fa-robot"></i>
+      <i class="fas fa-brain"></i>
     </div>
     <div class="ai-launcher-text-box d-none d-md-flex flex-column text-start ms-2 me-1">
-      <span class="ai-launcher-title font-monospace fw-extrabold">BrainBot AI</span>
+      <span class="ai-launcher-title font-monospace fw-extrabold">Brain AI</span>
       <span class="ai-launcher-sub font-monospace">Cognitive Tutor</span>
     </div>
-    <span id="aiStatusDot" class="ai-status-pulse online" title="BrainBot AI Ready"></span>
+    <span id="aiStatusDot" class="ai-status-pulse online" title="Brain AI Ready"></span>
   </button>
 
   <!-- Glassmorphism Chat Panel -->
@@ -24,19 +24,11 @@
           <span class="orb-ring"></span>
         </div>
         <div>
-          <h6 class="mb-0 fw-extrabold font-monospace text-glow-amber">BrainBot AI</h6>
+          <h6 class="mb-0 fw-extrabold font-monospace text-glow-amber">Brain AI</h6>
         </div>
       </div>
 
       <div class="d-flex align-items-center gap-2">
-        <!-- Model Selector Dropdown -->
-        <div class="model-select-wrapper">
-          <select id="aiModelSelect" class="form-select form-select-sm ai-model-select font-monospace"
-            title="Select Local/Cloud AI Model" onchange="changeAiModel(this.value)">
-            <option value="llama3.2:1b">llama3.2:1b</option>
-          </select>
-        </div>
-
         <button class="btn btn-sm ai-header-icon-btn text-muted hover-amber" onclick="clearAiChat()"
           title="Clear Chat History">
           <i class="fas fa-trash-alt"></i>
@@ -76,14 +68,13 @@
     <div id="aiChatMessages" class="ai-chat-messages p-3">
       <!-- Welcome Message -->
       <div class="ai-msg assistant-msg fade-in">
-        <div class="msg-avatar-glow"><i class="fas fa-robot"></i></div>
+        <div class="msg-avatar-glow"><i class="fas fa-brain"></i></div>
         <div class="msg-bubble assistant-bubble">
           <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
-            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-sparkles me-1"></i> BrainBot
-              AI</span>
+            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-sparkles me-1"></i> Brain AI</span>
             <small class="text-muted font-monospace fs-xs">System Online</small>
           </div>
-          Hello! I'm <strong>BrainBot AI</strong>, your interactive cognitive & mental ability tutor. 🧠✨
+          Hello! I'm <strong>Brain AI</strong>, your interactive cognitive & mental ability tutor. 🧠✨
           <br><br>
           I can help you master <strong>logical reasoning</strong>, <strong>quantitative aptitude</strong>,
           <strong>speed-distance formulas</strong>, and <strong>mental math shortcuts</strong>!
@@ -93,14 +84,14 @@
 
     <!-- Typing Wave Indicator -->
     <div id="aiTypingIndicator" class="ai-typing-bar px-3 py-2 d-none">
-      <div class="msg-avatar-glow"><i class="fas fa-robot"></i></div>
+      <div class="msg-avatar-glow"><i class="fas fa-brain"></i></div>
       <div class="wave-bars ms-2">
         <span class="bar bar-1"></span>
         <span class="bar bar-2"></span>
         <span class="bar bar-3"></span>
         <span class="bar bar-4"></span>
       </div>
-      <small class="font-monospace text-muted ms-2 fs-xs">BrainBot AI is computing step-by-step logic...</small>
+      <small class="font-monospace text-muted ms-2 fs-xs">Brain AI is computing step-by-step logic...</small>
     </div>
 
     <!-- Input Footer -->
@@ -245,7 +236,7 @@
     const msgDiv = document.createElement('div');
     msgDiv.className = `ai-msg ${role}-msg fade-in`;
 
-    const avatarIcon = role === 'user' ? 'fa-user-astronaut' : 'fa-robot';
+    const avatarIcon = role === 'user' ? 'fa-user-astronaut' : 'fa-brain';
     const parsedHtml = formatMarkdown(content);
 
     if (role === 'assistant' && animate) {
@@ -253,7 +244,7 @@
         <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
         <div class="msg-bubble ${role}-bubble">
           <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
-            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> BrainBot AI</span>
+            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI</span>
           </div>
           <div class="bubble-text"></div>
           <div class="bubble-actions mt-2 d-flex gap-2 opacity-0">
@@ -289,7 +280,7 @@
         <div class="msg-bubble ${role}-bubble">
           ${role === 'assistant' ? `
             <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
-              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> BrainBot AI</span>
+              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI</span>
             </div>
           ` : ''}
           <div class="bubble-text">${parsedHtml}</div>
