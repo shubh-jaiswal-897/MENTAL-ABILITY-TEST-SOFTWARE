@@ -70,6 +70,8 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 import dj_database_url
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
+if os.environ.get('VERCEL') and not DATABASE_URL:
+    DATABASE_URL = 'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
 
 if DATABASE_URL:
     DATABASES = {
