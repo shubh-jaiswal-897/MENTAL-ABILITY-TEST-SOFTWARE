@@ -171,7 +171,14 @@ def generate_smart_cognitive_fallback(prompt):
 
 @require_http_methods(["GET"])
 def ollama_models_view(request):
-    """API endpoint to get list of locally available Ollama AI models."""
+    """API endpoint to get list of available AI models."""
+    if os.environ.get('VERCEL'):
+        return JsonResponse({
+            "success": True,
+            "is_running": True,
+            "models": ["llama-3.2-1b-preview (Cloud AI)", DEFAULT_MODEL],
+            "default_model": "llama-3.2-1b-preview (Cloud AI)"
+        })
     models = fetch_ollama_models()
     is_running = len(models) > 0
     return JsonResponse({
@@ -186,8 +193,8 @@ def ollama_models_view(request):
 def ollama_chat_view(request):
     """
     Hybrid AI Endpoint:
-    1. Tries local Ollama endpoint (http://localhost:11434).
-    2. Tries Cloud API (Groq API if GROQ_API_KEY configured).
+    1. Tries local Ollama endpoint (if running locally).
+    2. Tries Cloud API (Groq API Llama 3.2 1B).
     3. Fallback to built-in Smart Cognitive Solver engine for guaranteed Vercel cloud responses.
     """
     try:
@@ -211,40 +218,43 @@ def ollama_chat_view(request):
         msg for msg in user_messages[-10:] if msg.get("role") in ["user", "assistant"]
     ]
 
-    # --- Tier 1: Try Local Ollama Instance ---
-    try:
-        payload = {
-            "model": selected_model,
-            "messages": messages_payload,
-            "stream": False,
-            "options": {
-                "num_predict": 450,
-                "temperature": 0.7
+    is_vercel = bool(os.environ.get('VERCEL'))
+
+    # --- Tier 1: Try Local Ollama Instance (Only if running locally, skip timeout hang on Vercel) ---
+    if not is_vercel:
+        try:
+            payload = {
+                "model": selected_model,
+                "messages": messages_payload,
+                "stream": False,
+                "options": {
+                    "num_predict": 450,
+                    "temperature": 0.7
+                }
             }
-        }
-        req_data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            f"{OLLAMA_BASE_URL}/api/chat",
-            data=req_data,
-            headers={
-                "Content-Type": "application/json",
-                "User-Agent": "MentalAbilityTestSoftware/1.0"
-            },
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            if resp.status == 200:
-                resp_json = json.loads(resp.read().decode("utf-8"))
-                content = resp_json.get("message", {}).get("content", "").strip()
-                if content:
-                    return JsonResponse({
-                        "success": True,
-                        "source": "ollama_local",
-                        "model": selected_model,
-                        "response": content
-                    })
-    except Exception as e:
-        print(f"[BrainBot AI] Local Ollama error or timeout ({e}). Trying cloud/smart fallback...")
+            req_data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                data=req_data,
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "MentalAbilityTestSoftware/1.0"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                if resp.status == 200:
+                    resp_json = json.loads(resp.read().decode("utf-8"))
+                    content = resp_json.get("message", {}).get("content", "").strip()
+                    if content:
+                        return JsonResponse({
+                            "success": True,
+                            "source": "ollama_local",
+                            "model": selected_model,
+                            "response": content
+                        })
+        except Exception as e:
+            print(f"[BrainBot AI] Local Ollama notice ({e}). Trying cloud/smart fallback...")
 
     # --- Tier 2: Try Free Cloud AI (Groq API Llama 3.2 1B Online Host) ---
     cloud_reply = query_groq_api(messages_payload)
