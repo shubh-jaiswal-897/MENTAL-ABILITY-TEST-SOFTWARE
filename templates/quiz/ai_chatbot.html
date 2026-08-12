@@ -237,14 +237,21 @@
     msgDiv.className = `ai-msg ${role}-msg fade-in`;
 
     const avatarIcon = role === 'user' ? 'fa-user-astronaut' : 'fa-brain';
-    const parsedHtml = formatMarkdown(content);
+    let sourceBadge = '';
+    if (sourceTag === 'ollama_local') {
+      sourceBadge = '<span class="badge bg-success-subtle text-success border border-success font-monospace ms-2 fs-xs"><i class="fas fa-microchip me-1"></i> brain-ai Local</span>';
+    } else if (sourceTag === 'cloud_groq') {
+      sourceBadge = '<span class="badge bg-info-subtle text-info border border-info font-monospace ms-2 fs-xs"><i class="fas fa-cloud me-1"></i> Llama 3.2 Cloud</span>';
+    } else if (role === 'assistant') {
+      sourceBadge = '<span class="badge bg-amber-subtle text-amber border border-warning font-monospace ms-2 fs-xs"><i class="fas fa-sparkles me-1"></i> Brain AI Engine</span>';
+    }
 
     if (role === 'assistant' && animate) {
       msgDiv.innerHTML = `
         <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
         <div class="msg-bubble ${role}-bubble">
           <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
-            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI</span>
+            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI ${sourceBadge}</span>
           </div>
           <div class="bubble-text"></div>
           <div class="bubble-actions mt-2 d-flex gap-2 opacity-0">
@@ -265,22 +272,23 @@
       const typingTimer = setInterval(() => {
         if (currentWordIndex < words.length) {
           currentTextAccumulator += (currentWordIndex === 0 ? '' : ' ') + words[currentWordIndex];
-          bubbleTextEl.innerHTML = formatMarkdown(currentTextAccumulator);
+          bubbleTextEl.innerHTML = formatMarkdown(currentTextAccumulator) + '<span class="ai-typing-cursor">▌</span>';
           currentWordIndex++;
           scrollToBottom();
         } else {
           clearInterval(typingTimer);
+          bubbleTextEl.innerHTML = formatMarkdown(content);
           if (actionsEl) actionsEl.classList.remove('opacity-0');
           scrollToBottom();
         }
-      }, 15);
+      }, 45);
     } else {
       msgDiv.innerHTML = `
         <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
         <div class="msg-bubble ${role}-bubble">
           ${role === 'assistant' ? `
             <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
-              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI</span>
+              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> Brain AI ${sourceBadge}</span>
             </div>
           ` : ''}
           <div class="bubble-text">${parsedHtml}</div>

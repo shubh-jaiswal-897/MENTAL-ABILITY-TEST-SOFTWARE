@@ -1022,6 +1022,20 @@ body {
     color: var(--lc-text);
 }
 
+.ai-typing-cursor {
+    color: var(--lc-amber);
+    font-weight: bold;
+    font-size: 1.1em;
+    animation: blinkCursor 0.7s infinite;
+    margin-left: 2px;
+    display: inline-block;
+}
+
+@keyframes blinkCursor {
+    0%, 100% { opacity: 1; text-shadow: 0 0 8px var(--lc-amber); }
+    50% { opacity: 0; }
+}
+
 
 /* ==========================================================================
    🎨 Standardized Form Elements, Code Tags & Alerts Theme Bindings
