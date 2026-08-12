@@ -10,23 +10,27 @@
 }
 
 #homeCarousel .carousel-caption {
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    padding: 1rem;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: #ffffff !important;
 }
 
 #homeCarousel .carousel-caption h5 {
     font-size: 2rem;
     font-weight: bold;
+    color: #ffffff !important;
 }
 
 #homeCarousel .carousel-caption p {
     font-size: 1.2rem;
+    color: #e2e8f0 !important;
 }
 
 /* Content Section */
 .container.my-5 h2 {
-    color: #333;
+    color: var(--lc-text) !important;
     font-weight: 700;
     margin-bottom: 2rem;
 }
@@ -34,46 +38,46 @@
 .container.my-5 .lead {
     font-size: 1.25rem;
     line-height: 1.6;
-    color: #555;
+    color: var(--lc-text-muted) !important;
 }
 
 .container.my-5 p {
     font-size: 1.1rem;
     line-height: 1.7;
-    color: #666;
+    color: var(--lc-text-muted) !important;
 }
 
 /* Action Buttons */
 .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: var(--lc-blue);
+    border-color: var(--lc-blue);
     padding: 0.75rem 2rem;
     font-size: 1.2rem;
     border-radius: 50px;
     transition: all 0.3s ease;
+    color: #ffffff !important;
 }
 
 .btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+    filter: brightness(1.15);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 .btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
+    background-color: var(--lc-easy);
+    border-color: var(--lc-easy);
     padding: 0.75rem 2rem;
     font-size: 1.2rem;
     border-radius: 50px;
     transition: all 0.3s ease;
+    color: #ffffff !important;
 }
 
 .btn-success:hover {
-    background-color: #1e7e34;
-    border-color: #1e7e34;
+    filter: brightness(1.15);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 /* Responsive adjustments */
@@ -97,43 +101,4 @@
     .container.my-5 h2 {
         font-size: 1.8rem;
     }
-
-    .container.my-5 .lead {
-        font-size: 1.1rem;
-    }
-
-    .btn-primary, .btn-success {
-        font-size: 1rem;
-        padding: 0.6rem 1.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    #homeCarousel {
-        height: 40vh;
-    }
-
-    #homeCarousel .carousel-item img {
-        height: 40vh;
-    }
-
-    .container.my-5 {
-        padding: 2rem 1rem;
-    }
-
-    .btn-primary, .btn-success {
-        width: 100%;
-        margin-bottom: 1rem;
-    }
-}
-
-/* Premium Dark Mode Overrides for Home page elements */
-body.dark-mode .container.my-5 h2 {
-    color: #E5E9F0 !important;
-}
-body.dark-mode .container.my-5 .lead {
-    color: #C5C6C7 !important;
-}
-body.dark-mode .container.my-5 p {
-    color: #C5C6C7 !important;
 }

@@ -1,51 +1,94 @@
 {% extends 'base.html' %}
 
-{% block title %}Revision - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+{% block title %}Problem Set & Revision - MENTAL ABILITY TEST SOFTWARE{% endblock %}
 
 {% block content %}
-  <h1>Revision - All Questions</h1>
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-auto">
-      <select name="subject" class="form-select">
-        <option value="">All subjects</option>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1" style="color: var(--lc-text);"><i class="fas fa-layer-group me-2" style="color: var(--lc-amber);"></i> Problem Set Repository</h3>
+    <p class="small mb-0" style="color: var(--lc-text-muted);">Browse, filter, and study reasoning questions with step-by-step logic explanations.</p>
+  </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="lc-card mb-4 p-3">
+  <form method="get" class="row g-2 align-items-center">
+    <div class="col-md-4">
+      <select name="subject" class="form-select" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+        <option value="">All Subjects / Categories</option>
         {% for s in subjects %}
           <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_subject %}selected{% endif %}>{{ s.name }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-auto">
-      <input type="search" name="q" class="form-control" placeholder="Search text..." value="{{ search_query }}">
+    
+    <div class="col-md-3">
+      <select name="difficulty" class="form-select font-monospace" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+        <option value="">All Difficulties</option>
+        <option value="EASY" {% if selected_difficulty == 'EASY' %}selected{% endif %}>Easy</option>
+        <option value="MEDIUM" {% if selected_difficulty == 'MEDIUM' %}selected{% endif %}>Medium</option>
+        <option value="HARD" {% if selected_difficulty == 'HARD' %}selected{% endif %}>Hard</option>
+      </select>
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit">Filter</button>
+
+    <div class="col-md-3">
+      <input type="search" name="q" class="form-control" placeholder="Search keywords..." value="{{ search_query }}" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+    </div>
+
+    <div class="col-md-2">
+      <button class="btn btn-lc-primary w-100 font-monospace" type="submit">
+        <i class="fas fa-filter me-1"></i> Filter
+      </button>
     </div>
   </form>
-  <div class="list-group">
-    {% for q in questions %}
-      <div class="list-group-item">
-        <div class="d-flex w-100 justify-content-between">
-          <h5 class="mb-1">{{ forloop.counter }}. {{ q.text }}</h5>
-          {% if q.subject %}
-            <small class="text-muted">{{ q.subject.name }}</small>
-          {% endif %}
+</div>
+
+<!-- Question Cards -->
+<div class="row g-3">
+  {% for q in questions %}
+    <div class="col-12">
+      <div class="lc-card p-3">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <h5 class="fw-bold mb-0" style="font-size: 1.1rem; color: var(--lc-text);">
+            <span class="font-monospace me-2" style="color: var(--lc-amber);">#{{ forloop.counter }}</span>{{ q.text }}
+          </h5>
+          <div class="d-flex align-items-center gap-2">
+            <span class="{% if q.difficulty == 'EASY' %}badge-easy{% elif q.difficulty == 'HARD' %}badge-hard{% else %}badge-medium{% endif %}">
+              {{ q.get_difficulty_display }}
+            </span>
+            {% if q.subject %}
+              <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-blue); border: 1px solid var(--lc-border-highlight);">{{ q.subject.name }}</span>
+            {% endif %}
+          </div>
         </div>
-        <ul class="list-group list-group-flush mt-2">
+
+        <!-- Choices -->
+        <div class="row g-2 mt-2">
           {% for c in q.choices.all %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ c.text }}
-              {% if c.is_correct %}
-                <span class="badge bg-success">Correct</span>
-              {% endif %}
-            </li>
-          {% empty %}
-            <li class="list-group-item">No choices for this question.</li>
+            <div class="col-md-6">
+              <div class="p-2 rounded d-flex justify-content-between align-items-center small" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight);">
+                <span style="color: var(--lc-text);">{{ c.text }}</span>
+                {% if c.is_correct %}
+                  <span class="badge bg-success font-monospace"><i class="fas fa-check me-1"></i> Correct</span>
+                {% endif %}
+              </div>
+            </div>
           {% endfor %}
-        </ul>
+        </div>
+
+        {% if q.explanation %}
+          <div class="mt-3 pt-2 border-top" style="border-color: var(--lc-border-highlight) !important;">
+            <small class="font-monospace" style="color: var(--lc-amber);"><i class="fas fa-brain me-1"></i> <strong>Logic Explanation:</strong> {{ q.explanation }}</small>
+          </div>
+        {% endif %}
       </div>
-    {% empty %}
-      <div class="alert alert-info">No questions yet. Use the admin to add some.</div>
-    {% endfor %}
-  </div>
-
-
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="lc-card text-center py-5">
+        <p class="mb-0" style="color: var(--lc-text-muted);">No matching questions found in repository.</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
 {% endblock %}

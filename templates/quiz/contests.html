@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly & Monthly Contests - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <!-- Header Banner -->
+  <div class="col-12">
+    <div class="lc-card p-4 position-relative overflow-hidden" style="background: var(--lc-surface); border-left: 4px solid var(--lc-amber);">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <span class="badge bg-warning text-dark font-monospace fw-bold mb-2"><i class="fas fa-trophy me-1"></i> CONTEST ARENA</span>
+          <h3 class="fw-bold mb-1" style="color: var(--lc-text);">Weekly & Monthly Aptitude Championships</h3>
+          <p class="small mb-0" style="color: var(--lc-text-muted);">Compete live against top mind-athletes, earn massive XP prizes, and qualify for Goodies rewards!</p>
+        </div>
+        <a href="{% url 'quiz:goodies' %}" class="btn btn-lc-primary font-monospace">
+          <i class="fas fa-gift me-1"></i> Visit Goodies Store &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Left Column: Contests Listings -->
+  <div class="col-lg-8">
+    <!-- Weekly Contests Section -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-calendar-week me-2" style="color: var(--lc-amber);"></i> Weekly Contests</h5>
+      <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">EVERY SUNDAY</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      {% for contest in weekly_contests %}
+        <div class="col-12">
+          <div class="lc-card p-4">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <span class="badge bg-warning text-dark font-monospace fw-bold me-2">WEEKLY</span>
+                <span class="font-monospace small" style="color: var(--lc-blue);"><i class="fas fa-stopwatch me-1"></i> {{ contest.duration_minutes }} Mins</span>
+              </div>
+              <span class="badge font-monospace fs-6" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-amber);">
+                <i class="fas fa-bolt me-1"></i> +{{ contest.xp_prize }} XP PRIZE
+              </span>
+            </div>
+
+            <h4 class="fw-bold mb-2" style="color: var(--lc-text);">{{ contest.title }}</h4>
+            <p class="small mb-3" style="color: var(--lc-text-muted);">{{ contest.description }}</p>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2" style="border-color: var(--lc-border-highlight) !important;">
+              <div class="small font-monospace" style="color: var(--lc-text-muted);">
+                <i class="fas fa-clock me-1" style="color: var(--lc-amber);"></i> Ends: {{ contest.end_time|date:"M d, Y H:i" }}
+              </div>
+              {% if user.is_authenticated %}
+                <a href="{% url 'quiz:join_contest' contest.id %}" class="btn btn-lc-primary btn-sm px-4 font-monospace">
+                  <i class="fas fa-flag-checkered me-1"></i> ENTER CONTEST ARENA
+                </a>
+              {% else %}
+                <a href="{% url 'login' %}" class="btn btn-lc-secondary btn-sm px-4">Log in to Enter</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12">
+          <div class="lc-card text-center py-4">
+            <p class="mb-0" style="color: var(--lc-text-muted);">No active weekly contests scheduled.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Monthly Championships Section -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-crown me-2" style="color: var(--lc-amber);"></i> Monthly Championships</h5>
+      <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">1st OF MONTH</span>
+    </div>
+
+    <div class="row g-3">
+      {% for contest in monthly_contests %}
+        <div class="col-12">
+          <div class="lc-card p-4" style="border-left: 4px solid var(--lc-hard);">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <span class="badge bg-danger text-light font-monospace fw-bold me-2">MONTHLY GRAND</span>
+                <span class="font-monospace small" style="color: var(--lc-blue);"><i class="fas fa-stopwatch me-1"></i> {{ contest.duration_minutes }} Mins</span>
+              </div>
+              <span class="badge font-monospace fs-6" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-amber);">
+                <i class="fas fa-bolt me-1"></i> +{{ contest.xp_prize }} XP PRIZE
+              </span>
+            </div>
+
+            <h4 class="fw-bold mb-2" style="color: var(--lc-text);">{{ contest.title }}</h4>
+            <p class="small mb-3" style="color: var(--lc-text-muted);">{{ contest.description }}</p>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2" style="border-color: var(--lc-border-highlight) !important;">
+              <div class="small font-monospace" style="color: var(--lc-text-muted);">
+                <i class="fas fa-clock me-1" style="color: var(--lc-amber);"></i> Ends: {{ contest.end_time|date:"M d, Y H:i" }}
+              </div>
+              {% if user.is_authenticated %}
+                <a href="{% url 'quiz:join_contest' contest.id %}" class="btn btn-lc-primary btn-sm px-4 font-monospace">
+                  <i class="fas fa-flag-checkered me-1"></i> ENTER CHAMPIONSHIP ARENA
+                </a>
+              {% else %}
+                <a href="{% url 'login' %}" class="btn btn-lc-secondary btn-sm px-4">Log in to Enter</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12">
+          <div class="lc-card text-center py-4">
+            <p class="mb-0" style="color: var(--lc-text-muted);">No active monthly grand championships scheduled.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right Sidebar Column: Leaderboard -->
+  <div class="col-lg-4">
+    <div class="lc-card sticky-top" style="top: 100px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-medal me-2" style="color: var(--lc-amber);"></i> Global Leaderboard</h6>
+        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">TOP ATHLETES</span>
+      </div>
+
+      <div class="list-group list-group-flush">
+        {% for rank_user in leaderboard %}
+          <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3 bg-transparent border-bottom" style="border-color: var(--lc-border-highlight) !important;">
+            <div class="d-flex align-items-center gap-3">
+              <div class="fw-bold font-monospace fs-5 text-center" style="width: 30px;">
+                {% if forloop.counter == 1 %}🥇
+                {% elif forloop.counter == 2 %}🥈
+                {% elif forloop.counter == 3 %}🥉
+                {% else %}<span style="color: var(--lc-text-muted);">#{{ forloop.counter }}</span>
+                {% endif %}
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0" style="color: var(--lc-text);">{{ rank_user.user.username }}</h6>
+                <small class="font-monospace" style="color: var(--lc-amber);">{{ rank_user.rank_title }}</small>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <div class="fw-bold font-monospace" style="color: var(--lc-blue);"><i class="fas fa-bolt me-1"></i> {{ rank_user.total_xp }}</div>
+              <small class="font-monospace" style="color: var(--lc-text-muted);">{{ rank_user.streak_count }}d 🔥</small>
+            </div>
+          </div>
+        {% empty %}
+          <p class="small text-center py-3 mb-0" style="color: var(--lc-text-muted);">No rankings recorded yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

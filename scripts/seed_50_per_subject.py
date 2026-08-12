@@ -20,11 +20,17 @@ else:
             text = f"{subject.name} Question {i}"
             q, created = Question.objects.get_or_create(text=text, subject=subject)
             if created:
-                # Add four choices; mark Option A as correct
-                Choice.objects.create(question=q, text='Option A', is_correct=True)
-                Choice.objects.create(question=q, text='Option B', is_correct=False)
-                Choice.objects.create(question=q, text='Option C', is_correct=False)
-                Choice.objects.create(question=q, text='Option D', is_correct=False)
+                # Add four choices; randomize correct choice position
+                import random
+                choices_list = [
+                    ('Option A', True),
+                    ('Option B', False),
+                    ('Option C', False),
+                    ('Option D', False)
+                ]
+                random.shuffle(choices_list)
+                for text_val, corr in choices_list:
+                    Choice.objects.create(question=q, text=text_val, is_correct=corr)
                 created_count += 1
         total = Question.objects.filter(subject=subject).count()
         print(f"Subject '{subject.name}': ensured {total} questions (created {created_count}).")

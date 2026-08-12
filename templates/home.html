@@ -1,75 +1,153 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/home.css' %}">
-{% endblock %}
-
-{% block title %}Welcome - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+{% block title %}MENTAL ABILITY TEST SOFTWARE - Daily Challenge & Quiz Arena{% endblock %}
 
 {% block content %}
-  <!-- Carousel -->
-  <div id="homeCarousel" class="carousel slide" data-bs-ride="carousel">
-    <div class="carousel-indicators">
-      <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
-      <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
-      <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+<div class="row g-4">
+  <!-- Left Main Column: Daily Challenge Hero Card & Featured Problem Sets -->
+  <div class="col-lg-8">
+    <!-- Daily Challenge Hero Banner -->
+    <div class="lc-card position-relative overflow-hidden mb-4" style="background: var(--lc-surface); border-left: 4px solid var(--lc-amber);">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-warning text-dark font-monospace fw-bold"><i class="fas fa-fire me-1"></i> DAILY CHALLENGE</span>
+          <span class="small font-monospace" style="color: var(--lc-text-muted);">{% now "F j, Y" %}</span>
+          <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-amber);" title="Auto-rotates to tomorrow's new challenge at midnight">
+            <i class="fas fa-clock me-1"></i> Resets in <span id="dailyCountdown">--:--:--</span>
+          </span>
+        </div>
+        <span class="badge bg-secondary font-monospace">2x XP BONUS ⚡</span>
+      </div>
+
+      {% if daily_question %}
+        <div class="mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="{% if daily_question.difficulty == 'EASY' %}badge-easy{% elif daily_question.difficulty == 'HARD' %}badge-hard{% else %}badge-medium{% endif %}">
+              {{ daily_question.get_difficulty_display }}
+            </span>
+            <span class="small font-monospace" style="color: var(--lc-blue);"><i class="fas fa-tag me-1"></i>{{ daily_question.subject.name|default:"General Aptitude" }}</span>
+          </div>
+          <h4 class="fw-bold mb-2" style="color: var(--lc-text);">{{ daily_question.text }}</h4>
+          <p class="small" style="color: var(--lc-text-muted);">Solve today's question to maintain your daily flame streak and double your XP level progression!</p>
+        </div>
+      {% else %}
+        <h4 class="fw-bold mb-2" style="color: var(--lc-text);">Daily Aptitude Challenge</h4>
+        <p style="color: var(--lc-text-muted);">Test your logical speed with today's curated mental ability puzzle.</p>
+      {% endif %}
+
+      <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+          <a href="{% url 'quiz:daily_challenge' %}" class="btn btn-lc-primary">
+            <i class="fas fa-play me-2"></i> Solve Challenge Now
+          </a>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn btn-lc-primary">
+            <i class="fas fa-lock me-2"></i> Log In to Solve
+          </a>
+        {% endif %}
+        <a href="{% url 'quiz:test_session' %}" class="btn btn-lc-secondary">
+          <i class="fas fa-gamepad me-2"></i> Full Quiz Arena
+        </a>
+      </div>
     </div>
-    <div class="carousel-inner">
-      <div class="carousel-item active">
-        <img src="https://source.unsplash.com/featured/?brain" class="d-block w-100" alt="Brain Training">
-        <div class="carousel-caption d-none d-md-block">
-          <h5>Enhance Your Mental Abilities</h5>
-          <p>Challenge your mind with our comprehensive tests.</p>
-        </div>
-      </div>
-      <div class="carousel-item">
-        <img src="https://source.unsplash.com/featured/?puzzle" class="d-block w-100" alt="Puzzle Solving">
-        <div class="carousel-caption d-none d-md-block">
-          <h5>Improve Problem Solving</h5>
-          <p>Sharpen your logical thinking skills.</p>
-        </div>
-      </div>
-      <div class="carousel-item">
-        <img src="https://source.unsplash.com/featured/?intelligence" class="d-block w-100" alt="Intelligence Test">
-        <div class="carousel-caption d-none d-md-block">
-          <h5>Measure Your Intelligence</h5>
-          <p>Track your progress and improve over time.</p>
-        </div>
-      </div>
+
+    <!-- Topics Grid Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-th-large me-2" style="color: var(--lc-amber);"></i> Problem Categories</h5>
+      <a href="{% url 'quiz:revision' %}" class="small text-decoration-none fw-semibold" style="color: var(--lc-amber);">View All Questions &rarr;</a>
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>
+
+    <!-- Topics Grid -->
+    <div class="row g-3">
+      {% for subject in subjects %}
+        <div class="col-md-6">
+          <div class="lc-card h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0" style="color: var(--lc-text);">{{ subject.name }}</h6>
+                <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">{{ subject.q_count }} Questions</span>
+              </div>
+              <p class="small mb-3" style="color: var(--lc-text-muted);">Master key concepts in {{ subject.name|lower }} with adaptive problem solving and detailed explanations.</p>
+            </div>
+            <a href="{% url 'quiz:revision' %}?subject={{ subject.id }}" class="btn btn-lc-secondary btn-sm w-100">
+              Practice {{ subject.name }}
+            </a>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12">
+          <div class="lc-card text-center py-4">
+            <p class="mb-0" style="color: var(--lc-text-muted);">No subject categories found.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
   </div>
 
-  <!-- Content Section -->
-  <div class="container my-5">
-    <div class="row">
-      <div class="col-lg-8 mx-auto text-center">
-        <h2 class="mb-4">About Our Mental Ability Test Software</h2>
-        <p class="lead mb-4">
-          Welcome to MENTAL ABILITY TEST SOFTWARE, your ultimate platform for enhancing cognitive skills and measuring intelligence. Our software offers a wide range of tests designed to challenge and improve various aspects of mental ability, including logical reasoning, problem-solving, memory, and analytical thinking.
-        </p>
-        <p>
-          Whether you're preparing for competitive exams, looking to boost your brainpower, or simply interested in understanding your cognitive strengths, our interactive quizzes and assessments provide valuable insights and personalized feedback. Join thousands of users who are already improving their mental abilities with our comprehensive testing platform.
-        </p>
+  <!-- Right Sidebar Column: User Stats, Streaks, & Arena Quick Access -->
+  <div class="col-lg-4">
+    <!-- User Profile & Streak Card -->
+    <div class="lc-card mb-4">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="rounded-circle p-3 style-user-icon" style="width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight); color: var(--lc-amber);">
+          <i class="fas fa-user-astronaut fa-lg"></i>
+        </div>
+        <div>
+          <h6 class="fw-bold mb-0" style="color: var(--lc-text);">{{ user.username|default:"Guest Explorer" }}</h6>
+          <small class="font-monospace fw-bold" style="color: var(--lc-amber);">{{ profile.rank_title|default:"Novice Explorer" }}</small>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Action Buttons -->
-  <div class="container mb-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6 text-center">
-        <a href="{% url 'quiz:test_session' %}" class="btn btn-primary btn-lg me-3 mb-3">Start Test Session</a>
-        <a href="{% url 'quiz:revision' %}" class="btn btn-success btn-lg mb-3">Go to Revision</a>
+      <hr style="border-color: var(--lc-border);">
+
+      <div class="row text-center g-2 my-2">
+        <div class="col-6">
+          <div class="p-2 rounded" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3);">
+            <div class="h5 fw-bold mb-0" style="color: var(--lc-amber);"><i class="fas fa-fire me-1"></i> {{ profile.streak_count|default:0 }}</div>
+            <small class="font-monospace" style="color: var(--lc-text-muted);">Day Streak</small>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-2 rounded" style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.3);">
+            <div class="h5 fw-bold mb-0" style="color: var(--lc-blue);"><i class="fas fa-bolt me-1"></i> {{ profile.total_xp|default:0 }}</div>
+            <small class="font-monospace" style="color: var(--lc-text-muted);">Total XP</small>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Arena Highlights Card -->
+    <div class="lc-card">
+      <h6 class="fw-bold mb-3" style="color: var(--lc-text);"><i class="fas fa-brain me-2" style="color: var(--lc-amber);"></i> Mental Ability Quiz Arena</h6>
+      <ul class="list-unstyled small mb-4" style="color: var(--lc-text-muted);">
+        <li class="mb-2"><i class="fas fa-check-circle me-2" style="color: var(--lc-easy);"></i> Split-pane interactive question workspace</li>
+        <li class="mb-2"><i class="fas fa-keyboard me-2" style="color: var(--lc-amber);"></i> Hotkeys support: Press <code>1-4</code> to pick options</li>
+        <li class="mb-2"><i class="fas fa-lightbulb me-2" style="color: var(--lc-blue);"></i> Step-by-step logic solution explanations</li>
+        <li class="mb-2"><i class="fas fa-fire me-2" style="color: var(--lc-hard);"></i> Daily challenge streak tracking</li>
+      </ul>
+      <a href="{% url 'quiz:test_session' %}" class="btn btn-lc-primary w-100">
+        <i class="fas fa-bolt me-2"></i> Enter Quiz Arena
+      </a>
+    </div>
   </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function updateDailyCountdown() {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const diff = Math.floor((midnight - now) / 1000);
+    const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+    const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+    const secs = String(diff % 60).padStart(2, '0');
+    const el = document.getElementById('dailyCountdown');
+    if (el) el.textContent = `${hours}:${mins}:${secs}`;
+  }
+  setInterval(updateDailyCountdown, 1000);
+  updateDailyCountdown();
+</script>
 {% endblock %}

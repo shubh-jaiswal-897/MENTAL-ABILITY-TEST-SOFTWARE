@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Question, Choice, ContactSubmission, TestAttempt, Subject
+from .models import Question, Choice, ContactSubmission, TestAttempt, Subject, UserProfile, Contest, GoodieItem, UserGoodieRedemption
 from .forms import ContactForm
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
@@ -7,10 +7,34 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone as dt_timezone
 import random
 import json
 from django.db.models import Avg, Count
+from django.db import transaction
+
+def _evaluate_test_answers(answers):
+    """Calculate score and XP earned based on user answers."""
+    score = 0
+    xp_earned = 0
+    for qid_str, choice_id in answers.items():
+        if choice_id:
+            try:
+                q = Question.objects.get(pk=int(qid_str))
+                choice = q.choices.get(pk=int(choice_id))
+                if choice.is_correct:
+                    score += 1
+                    if q.difficulty == Question.EASY:
+                        xp_earned += 1
+                    elif q.difficulty == Question.MEDIUM:
+                        xp_earned += 2
+                    elif q.difficulty == Question.HARD:
+                        xp_earned += 3
+                    else:
+                        xp_earned += 1
+            except Exception:
+                pass
+    return score, xp_earned
 
 def debug_db(request):
     import traceback
@@ -26,65 +50,20 @@ def debug_db(request):
         tb = traceback.format_exc()
         return HttpResponse(f"Error connecting to database:\n{e}\n\nTraceback:\n{tb}", content_type="text/plain", status=500)
 
-def index(request):
-    # Home page: do not show the full question list here.
-    # Keep this page as a landing area; questions are available on the Revision page.
-    return render(request, 'quiz/index.html')
-
-
-def revision(request):
-    """Show all questions for revision/study (linked in the navbar).
-
-    Supports:
-    - subject filter via GET param `subject` (subject id)
-    - free-text search via GET param `q` (matches question text)
-    - pagination via GET param `page` (25 items per page)
-    """
-    from django.core.paginator import Paginator
-    from django.db.models import Q
-    from .models import Subject
-
-    # Base queryset with prefetching
-    qs = Question.objects.select_related('subject').prefetch_related('choices').all()
-
-    # Subject filter
-    subjects = Subject.objects.all()
-    subject_id = request.GET.get('subject')
-    if subject_id:
-        try:
-            qs = qs.filter(subject_id=int(subject_id))
-        except Exception:
-            pass
-
-    # Search filter
-    search_q = request.GET.get('q', '').strip()
-    if search_q:
-        qs = qs.filter(text__icontains=search_q)
-
-    # No pagination, show all
-    return render(request, 'quiz/revision.html', {
-        'questions': qs,
-        'subjects': subjects,
-        'selected_subject': subject_id,
-        'search_query': search_q,
-    })
-
-
 def take_quiz(request, pk):
     question = get_object_or_404(Question, pk=pk)
+    choices = list(question.choices.all())
+    random.shuffle(choices)
     if request.method == 'POST':
         try:
             choice_id = int(request.POST.get('choice'))
             choice = question.choices.get(pk=choice_id)
         except Exception:
-            return render(request, 'quiz/quiz.html', {'question': question, 'error': 'Please select an option.'})
+            return render(request, 'quiz/quiz.html', {'question': question, 'shuffled_choices': choices, 'error': 'Please select an option.'})
 
         correct = choice.is_correct
         return redirect(reverse('quiz:result', args=[question.pk, int(correct)]))
 
-    # shuffle choices for display
-    choices = list(question.choices.all())
-    random.shuffle(choices)
     return render(request, 'quiz/quiz.html', {'question': question, 'shuffled_choices': choices})
 
 
@@ -94,7 +73,6 @@ def result(request, pk, correct):
 
 
 def signup(request):
-    """Allow new users to sign up using Django's built-in UserCreationForm."""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -124,19 +102,221 @@ def contact(request):
         form = ContactForm()
     return render(request, 'contact.html', {'form': form})
 
+def get_or_create_user_profile(user):
+    if not user.is_authenticated:
+        return None
+    profile, created = UserProfile.objects.get_or_create(user=user)
+    today = timezone.now().date()
+    if profile.last_active_date is None:
+        profile.streak_count = 1
+        profile.last_active_date = today
+        profile.save()
+    elif profile.last_active_date < today:
+        if profile.last_active_date == today - timedelta(days=1):
+            profile.streak_count += 1
+        else:
+            profile.streak_count = 1
+        profile.last_active_date = today
+        profile.save()
+    return profile
+
+
+def get_daily_challenge_question():
+    """
+    Deterministically selects today's Daily Challenge question based on UTC/local calendar day.
+    Automatically rotates to a fresh question every 24 hours at midnight.
+    """
+    today = timezone.now().date()
+    day_seed = today.year * 10000 + today.timetuple().tm_yday
+    questions = list(Question.objects.select_related('subject').all().order_by('id'))
+    if not questions:
+        return None
+    return questions[day_seed % len(questions)]
+
+
+def index(request):
+    """Home landing page with LeetCode style Daily Challenge and user stats."""
+    profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
+    daily_question = get_daily_challenge_question()
+
+    subjects = Subject.objects.annotate(q_count=Count('questions'))
+    total_questions = Question.objects.count()
+
+    context = {
+        'profile': profile,
+        'daily_question': daily_question,
+        'subjects': subjects,
+        'total_questions': total_questions,
+    }
+    return render(request, 'home.html', context)
+
+
+def revision(request):
+    """Show all questions for revision/study with difficulty filter."""
+    from django.db.models import Q
+
+    qs = Question.objects.select_related('subject').prefetch_related('choices').all()
+
+    subjects = Subject.objects.all()
+    subject_id = request.GET.get('subject')
+    if subject_id:
+        try:
+            qs = qs.filter(subject_id=int(subject_id))
+        except Exception:
+            pass
+
+    difficulty = request.GET.get('difficulty')
+    if difficulty in ['EASY', 'MEDIUM', 'HARD']:
+        qs = qs.filter(difficulty=difficulty)
+
+    search_q = request.GET.get('q', '').strip()
+    if search_q:
+        qs = qs.filter(text__icontains=search_q)
+
+    profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
+
+    return render(request, 'quiz/revision.html', {
+        'questions': qs,
+        'subjects': subjects,
+        'selected_subject': subject_id,
+        'selected_difficulty': difficulty,
+        'search_query': search_q,
+        'profile': profile,
+    })
+
+
+@login_required
+def daily_challenge(request):
+    """Direct shortcut view to launch today's Daily Challenge test session."""
+    daily_q = get_daily_challenge_question()
+    if not daily_q:
+        messages.error(request, "No questions available for Daily Challenge.")
+        return redirect('quiz:index')
+
+    # Set up session for single question daily challenge
+    request.session['test_qs'] = [daily_q.id]
+    request.session['test_subjects'] = daily_q.subject.name if daily_q.subject else 'General'
+    request.session['test_index'] = 0
+    request.session['test_score'] = 0
+    request.session['test_start'] = timezone.now().timestamp()
+    request.session['test_duration'] = 60  # 60s timer for daily challenge
+    request.session['is_daily_challenge'] = True
+
+    return redirect('quiz:test_session')
+
+
+def _build_session_question_breakdown(qs, answers):
+    """
+    Builds a detailed question-by-question breakdown including all choices,
+    highlighting the user's selected choice vs the correct choice.
+    """
+    breakdown = []
+    questions = Question.objects.filter(pk__in=qs).select_related('subject').prefetch_related('choices')
+    q_map = {q.id: q for q in questions}
+
+    for idx, qid in enumerate(qs, start=1):
+        try:
+            q_pk = int(qid)
+        except (ValueError, TypeError):
+            continue
+
+        q = q_map.get(q_pk)
+        if not q:
+            continue
+
+        selected_choice_id = str(answers.get(str(qid), answers.get(q_pk, '')))
+        choices_list = []
+        user_choice_obj = None
+        correct_choice_obj = None
+
+        for c in q.choices.all():
+            is_sel = (str(c.id) == selected_choice_id)
+            if c.is_correct:
+                correct_choice_obj = c
+            if is_sel:
+                user_choice_obj = c
+
+            choices_list.append({
+                'id': c.id,
+                'text': c.text,
+                'is_correct': c.is_correct,
+                'is_selected': is_sel,
+            })
+
+        if user_choice_obj:
+            status = 'CORRECT' if user_choice_obj.is_correct else 'INCORRECT'
+        else:
+            status = 'SKIPPED'
+
+        breakdown.append({
+            'num': idx,
+            'id': q.id,
+            'text': q.text,
+            'difficulty': q.get_difficulty_display(),
+            'difficulty_code': q.difficulty,
+            'subject_name': q.subject.name if q.subject else 'General Aptitude',
+            'choices': choices_list,
+            'status': status,
+            'user_choice': user_choice_obj.text if user_choice_obj else None,
+            'correct_choice': correct_choice_obj.text if correct_choice_obj else None,
+            'explanation': q.explanation,
+        })
+
+    return breakdown
+
+
+def _finish_test_session(request, start_ts, qs):
+    """Calculates scores, updates XP, records attempt, saves result to session, and redirects to test_result."""
+    answers = request.session.get('test_answers', {})
+    score, xp_earned = _evaluate_test_answers(answers)
+    is_daily = request.session.get('is_daily_challenge', False)
+    if is_daily:
+        xp_earned *= 2
+
+    question_breakdown = _build_session_question_breakdown(qs, answers)
+
+    if request.user.is_authenticated:
+        profile = get_or_create_user_profile(request.user)
+        profile.total_xp += xp_earned
+        profile.solved_questions_count += score
+        profile.save()
+
+        start_dt = datetime.fromtimestamp(float(start_ts), tz=dt_timezone.utc)
+        TestAttempt.objects.create(
+            user=request.user,
+            started_at=start_dt,
+            finished_at=timezone.now(),
+            score=score,
+            total=len(qs),
+            subjects=request.session.get('test_subjects', ''),
+            questions=','.join([str(x) for x in qs]),
+        )
+
+    total = len(qs)
+    percentage = round((score / total * 100), 2) if total > 0 else 0
+    request.session['last_test_result'] = {
+        'score': score,
+        'total': total,
+        'marks': score,
+        'max_marks': total,
+        'percentage': percentage,
+        'xp_earned': xp_earned,
+        'is_daily_challenge': is_daily,
+        'question_breakdown': question_breakdown,
+    }
+
+    for k in ['test_qs', 'test_index', 'test_score', 'test_start', 'test_duration', 'test_subjects', 'test_answers', 'is_daily_challenge']:
+        request.session.pop(k, None)
+
+    return redirect('quiz:test_result')
+
 
 @login_required
 def test_session(request):
     """
-    Handles the lifecycle of a test session.
-    Includes initialization, question navigation, timing, scoring, and result persistence.
+    LeetCode-Style Quiz Arena test session.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    # Ensure user is authenticated (decorator already enforces, but keep guard for safety)
-    if not request.user.is_authenticated:
-        return redirect('login')
+    profile = get_or_create_user_profile(request.user)
 
     # Start a new test session
     if 'action' in request.GET and request.GET['action'] == 'start':
@@ -145,12 +325,12 @@ def test_session(request):
         if not subject_ids:
             return render(request, 'test_session.html', {
                 'error': 'Please select at least one subject.',
-                'subjects': Subject.objects.all()
+                'subjects': Subject.objects.all(),
+                'profile': profile,
             })
         qs_qs = Question.objects.filter(subject_id__in=subject_ids)
         qs_ids = list(qs_qs.values_list('id', flat=True))
 
-        # Apply limit
         try:
             limit_val = int(limit)
             if limit_val > 0:
@@ -159,7 +339,7 @@ def test_session(request):
             qs_ids = qs_ids[:10]
 
         if not qs_ids:
-            return render(request, 'test_session.html', {'error': 'No questions available.'})
+            return render(request, 'test_session.html', {'error': 'No questions available.', 'profile': profile})
 
         random.shuffle(qs_ids)
         request.session['test_qs'] = qs_ids
@@ -167,151 +347,74 @@ def test_session(request):
         request.session['test_index'] = 0
         request.session['test_score'] = 0
         request.session['test_start'] = timezone.now().timestamp()
-        request.session['test_duration'] = len(qs_ids) * 20  # 20 seconds per question
+        request.session['test_duration'] = len(qs_ids) * 30  # 30s per question
+        request.session['is_daily_challenge'] = False
         return redirect('quiz:test_session')
 
-    # Retrieve session data
     qs = request.session.get('test_qs')
     if not qs:
         subjects = Subject.objects.all()
-        return render(request, 'test_session.html', {'subjects': subjects})
+        return render(request, 'test_session.html', {'subjects': subjects, 'profile': profile})
 
     start_ts = request.session.get('test_start')
     if start_ts is None:
-        return render(request, 'test_session.html', {'error': 'Session not initialized.'})
+        return render(request, 'test_session.html', {'error': 'Session not initialized.', 'profile': profile})
 
     elapsed_seconds = timezone.now().timestamp() - float(start_ts)
     duration_seconds = int(request.session.get('test_duration', 3 * 60))
     remaining_seconds = int(duration_seconds - elapsed_seconds)
     if remaining_seconds <= 0:
-        return redirect('quiz:test_result')
+        return _finish_test_session(request, start_ts, qs)
 
     index = int(request.session.get('test_index', 0))
 
-    # POST: process answer / navigation
     if request.method == 'POST':
-        # Re‑calculate elapsed to protect against late submissions
-        elapsed_seconds = timezone.now().timestamp() - float(start_ts)
-        if elapsed_seconds >= duration_seconds:
-            # Time expired – finalize attempt with current score
-            attempt = TestAttempt.objects.create(
-                user=request.user,
-                started_at=timezone.datetime.fromtimestamp(float(start_ts)),
-                finished_at=timezone.now(),
-                score=int(request.session.get('test_score', 0)),
-                total=len(qs),
-                subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs]),
-            )
-            return redirect('quiz:test_result')
-
-        # Record selected choice
         try:
             selected = int(request.POST.get('choice'))
         except Exception:
             selected = None
 
-        if index >= len(qs):
-            return redirect('quiz:test_result')
-        qid = qs[index]
-        answers = request.session.get('test_answers', {})
-        answers[str(qid)] = selected
-        request.session['test_answers'] = answers
+        if index < len(qs):
+            qid = qs[index]
+            answers = request.session.get('test_answers', {})
+            answers[str(qid)] = selected
+            request.session['test_answers'] = answers
+            request.session.modified = True
 
         action = request.POST.get('action', 'next')
-        if action == 'end':
-            # Compute final score
-            score = 0
-            answers = request.session.get('test_answers', {})
-            for qid_str, choice_id in answers.items():
-                if choice_id:
-                    try:
-                        q = Question.objects.get(pk=int(qid_str))
-                        choice = q.choices.get(pk=choice_id)
-                        if choice.is_correct:
-                            score += 1
-                    except Exception:
-                        pass
-            request.session['test_score'] = score
-            # Persist attempt
-            attempt = TestAttempt.objects.create(
-                user=request.user,
-                started_at=timezone.datetime.fromtimestamp(float(start_ts)),
-                finished_at=timezone.now(),
-                score=score,
-                total=len(qs),
-                subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs]),
-            )
-            return redirect('quiz:test_result')
-        elif action == 'previous':
+        if action == 'previous':
             index -= 1
-        else:
+            request.session['test_index'] = max(0, index)
+            return redirect('quiz:test_session')
+        elif action == 'next':
             index += 1
+            request.session['test_index'] = index
 
-        request.session['test_index'] = index
-        if index >= len(qs):
-            # Finalize test
-            score = 0
-            answers = request.session.get('test_answers', {})
-            for qid_str, choice_id in answers.items():
-                if choice_id:
-                    try:
-                        q = Question.objects.get(pk=int(qid_str))
-                        choice = q.choices.get(pk=choice_id)
-                        if choice.is_correct:
-                            score += 1
-                    except Exception:
-                        pass
-            request.session['test_score'] = score
-            attempt = TestAttempt.objects.create(
-                user=request.user,
-                started_at=timezone.datetime.fromtimestamp(float(start_ts)),
-                finished_at=timezone.now(),
-                score=score,
-                total=len(qs),
-                subjects=request.session.get('test_subjects', ''),
-                questions=','.join([str(x) for x in qs]),
-            )
-            return redirect('quiz:test_result')
-        elif index < 0:
-            index = 0
-            request.session['test_index'] = 0
+        is_timed_out = elapsed_seconds >= duration_seconds
+        is_finished = index >= len(qs)
+
+        if action == 'end' or is_timed_out or is_finished:
+            return _finish_test_session(request, start_ts, qs)
+
         return redirect('quiz:test_session')
 
-    # GET: render current question
+    # GET: render current question arena
     index = int(request.session.get('test_index', 0))
     if index >= len(qs):
-        # Final calculation (same as above)
-        score = 0
-        answers = request.session.get('test_answers', {})
-        for qid_str, choice_id in answers.items():
-            if choice_id:
-                try:
-                    q = Question.objects.get(pk=int(qid_str))
-                    choice = q.choices.get(pk=choice_id)
-                    if choice.is_correct:
-                        score += 1
-                except Exception:
-                    pass
-        request.session['test_score'] = score
-        attempt = TestAttempt.objects.create(
-            user=request.user,
-            started_at=timezone.datetime.fromtimestamp(float(start_ts)),
-            finished_at=timezone.now(),
-            score=score,
-            total=len(qs),
-            subjects=request.session.get('test_subjects', ''),
-            questions=','.join([str(x) for x in qs]),
-        )
         return redirect('quiz:test_result')
 
     qid = qs[index]
-    question = Question.objects.get(pk=qid)
+    question = Question.objects.select_related('subject').prefetch_related('choices').get(pk=qid)
     choices = list(question.choices.all())
-    random.shuffle(choices)
+    seed_key = f"{start_ts}_{qid}"
+    rng = random.Random(seed_key)
+    rng.shuffle(choices)
+
     answers = request.session.get('test_answers', {})
     selected_choice = answers.get(str(qid))
+
+    is_daily = request.session.get('is_daily_challenge', False)
+
     return render(request, 'test_session.html', {
         'question': question,
         'shuffled_choices': choices,
@@ -319,31 +422,35 @@ def test_session(request):
         'total': len(qs),
         'remaining_seconds': remaining_seconds,
         'selected_choice': selected_choice,
+        'profile': profile,
+        'is_daily_challenge': is_daily,
     })
+
+
 def test_result(request):
-    score = int(request.session.get('test_score', 0))
-    qs = request.session.get('test_qs', [])
-    total = len(qs)
-    # marks: correct=1, wrong=0
-    marks = score
-    max_marks = total
-    percentage = 0
-    if max_marks > 0:
-        percentage = round((marks / max_marks) * 100, 2)
-    # clear session keys (including duration)
-    for k in ['test_qs', 'test_index', 'test_score', 'test_start', 'test_duration', 'test_subjects', 'test_answers']:
-        request.session.pop(k, None)
-    return render(request, 'test_session_result.html', {
-        'score': score,
-        'total': total,
-        'marks': marks,
-        'max_marks': max_marks,
-        'percentage': percentage,
-    })
+    result_data = dict(request.session.get('last_test_result', {}))
+    profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
+    if not result_data:
+        score = int(request.session.get('test_score', 0))
+        qs = request.session.get('test_qs', [])
+        total = len(qs)
+        percentage = round((score / total * 100), 2) if total > 0 else 0
+        result_data = {
+            'score': score,
+            'total': total,
+            'marks': score,
+            'max_marks': total,
+            'percentage': percentage,
+            'xp_earned': 0,
+            'is_daily_challenge': False,
+        }
+    result_data['profile'] = profile
+    return render(request, 'test_session_result.html', result_data)
 
 
 @login_required
 def dashboard(request):
+    profile = get_or_create_user_profile(request.user)
     attempts = TestAttempt.objects.filter(user=request.user).order_by('-started_at')
     total_attempts = attempts.count()
     avg_score = 0
@@ -352,19 +459,17 @@ def dashboard(request):
     scores_over_time = []
 
     if total_attempts > 0:
-        avg_score = attempts.aggregate(Avg('score'))['score__avg'] or 0
-        avg_score = round((avg_score / attempts.first().total * 100) if attempts.first().total > 0 else 0, 2)
+        perc_list = [(attempt.score / attempt.total * 100) for attempt in attempts if attempt.total > 0]
+        avg_score = round(sum(perc_list) / len(perc_list), 2) if perc_list else 0
 
-        # Get subject name mapping
         subject_name_map = {str(sub.id): sub.name for sub in Subject.objects.all()}
 
-        # Subject-wise performance
         subject_scores = {}
         for attempt in attempts:
             subjects_list = [s.strip() for s in attempt.subjects.split(',') if s.strip()] if attempt.subjects else []
             score_perc = (attempt.score / attempt.total * 100) if attempt.total > 0 else 0
             for sub in subjects_list:
-                subject_name = subject_name_map.get(sub, sub)  # Use name if available, else ID
+                subject_name = subject_name_map.get(sub, sub)
                 if subject_name in subject_scores:
                     subject_scores[subject_name]['count'] += 1
                     subject_scores[subject_name]['total_score'] += score_perc
@@ -372,20 +477,34 @@ def dashboard(request):
                     subject_scores[subject_name] = {'count': 1, 'total_score': score_perc}
 
         subject_avg = {sub: round(data['total_score'] / data['count'], 2) for sub, data in subject_scores.items()}
-
-        # Recommendations: subjects with average below 60%
         recommendations = [sub for sub, avg in subject_avg.items() if avg < 60]
 
-        # Scores over time (last 10 attempts)
         scores_over_time = [
             {
                 'date': attempt.started_at.strftime('%Y-%m-%d'),
-                'score': (attempt.score / attempt.total * 100) if attempt.total > 0 else 0
+                'score': round((attempt.score / attempt.total * 100), 1) if attempt.total > 0 else 0
             }
             for attempt in attempts[:10]
         ]
 
-    # Convert subject IDs to names for display in recent activity
+    # Generate LeetCode-Style Heatmap activity data for past 60 days
+    today = timezone.now().date()
+    heatmap_data = []
+    attempt_date_counts = {}
+    for attempt in attempts:
+        attempt_date = attempt.started_at.date().strftime('%Y-%m-%d')
+        attempt_date_counts[attempt_date] = attempt_date_counts.get(attempt_date, 0) + 1
+
+    for i in range(59, -1, -1):
+        day_date = today - timedelta(days=i)
+        day_str = day_date.strftime('%Y-%m-%d')
+        count = attempt_date_counts.get(day_str, 0)
+        heatmap_data.append({
+            'date': day_str,
+            'count': count,
+            'level': min(count, 4)  # 0 to 4 intensity level
+        })
+
     recent_attempts = []
     subject_name_map = {str(sub.id): sub.name for sub in Subject.objects.all()}
     for attempt in attempts[:5]:
@@ -396,11 +515,167 @@ def dashboard(request):
         recent_attempts.append(attempt_copy)
 
     context = {
+        'profile': profile,
         'total_attempts': total_attempts,
         'avg_score': avg_score,
         'subject_avg': subject_avg,
         'recommendations': recommendations,
-        'scores_over_time': json.dumps(scores_over_time),  # Convert to JSON for JavaScript
-        'attempts': recent_attempts,  # Pass recent attempts with subject names
+        'scores_over_time': json.dumps(scores_over_time),
+        'attempts': recent_attempts,
+        'heatmap_data': json.dumps(heatmap_data),
     }
     return render(request, 'dashboard.html', context)
+
+
+def contests(request):
+    """View Weekly & Monthly Contests and Live Leaderboards."""
+    profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
+    
+    weekly_contests = Contest.objects.filter(contest_type=Contest.WEEKLY)
+    monthly_contests = Contest.objects.filter(contest_type=Contest.MONTHLY)
+
+    # Top User Leaderboard based on total XP
+    leaderboard = UserProfile.objects.select_related('user').order_by('-total_xp', '-solved_questions_count')[:10]
+
+    context = {
+        'profile': profile,
+        'weekly_contests': weekly_contests,
+        'monthly_contests': monthly_contests,
+        'leaderboard': leaderboard,
+    }
+    return render(request, 'quiz/contests.html', context)
+
+
+@login_required
+def join_contest(request, pk):
+    """Start a specific Contest session."""
+    contest = get_object_or_404(Contest, pk=pk)
+    qs_ids = list(contest.questions.values_list('id', flat=True))
+
+    if not qs_ids:
+        # Fallback to general questions if contest has none assigned
+        qs_ids = list(Question.objects.values_list('id', flat=True)[:10])
+
+    random.shuffle(qs_ids)
+    request.session['test_qs'] = qs_ids
+    request.session['test_subjects'] = contest.title
+    request.session['test_index'] = 0
+    request.session['test_score'] = 0
+    request.session['test_start'] = timezone.now().timestamp()
+    request.session['test_duration'] = contest.duration_minutes * 60
+    request.session['is_daily_challenge'] = False
+
+    messages.success(request, f"Joined {contest.title}! Good luck!")
+    return redirect('quiz:test_session')
+
+
+def goodies(request):
+    """Goodies Rewards Store where users redeem XP / Goodies Coins for physical rewards."""
+    profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
+    goodies_list = GoodieItem.objects.all()
+
+    user_redemptions = []
+    if request.user.is_authenticated:
+        user_redemptions = UserGoodieRedemption.objects.filter(user=request.user).select_related('goodie')
+
+    context = {
+        'profile': profile,
+        'goodies': goodies_list,
+        'redemptions': user_redemptions,
+        'user_redemptions': user_redemptions,
+    }
+    return render(request, 'quiz/goodies.html', context)
+
+
+@login_required
+def redeem_goodie(request, pk):
+    """Initiates goodie redemption flow by checking prerequisites and redirecting to address checkout."""
+    goodie = get_object_or_404(GoodieItem, pk=pk)
+    profile = get_or_create_user_profile(request.user)
+
+    if goodie.stock <= 0:
+        messages.error(request, f"Sorry, {goodie.name} is currently out of stock!")
+        return redirect('quiz:goodies')
+    elif profile.total_xp < goodie.coin_cost:
+        messages.error(request, f"Insufficient XP! You need {goodie.coin_cost} XP to redeem {goodie.name}. Current XP: {profile.total_xp}.")
+        return redirect('quiz:goodies')
+
+    return redirect('quiz:redeem_address', pk=pk)
+
+
+@login_required
+def redeem_address(request, pk):
+    """Checkout page to enter shipping address and complete goodie order redemption."""
+    goodie = get_object_or_404(GoodieItem, pk=pk)
+    profile = get_or_create_user_profile(request.user)
+
+    if goodie.stock <= 0:
+        messages.error(request, f"Sorry, {goodie.name} is currently out of stock!")
+        return redirect('quiz:goodies')
+    if profile.total_xp < goodie.coin_cost:
+        messages.error(request, f"Insufficient XP! You need {goodie.coin_cost} XP to redeem {goodie.name}. Current XP: {profile.total_xp}.")
+        return redirect('quiz:goodies')
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()
+        shipping_address = request.POST.get('shipping_address', '').strip()
+        city = request.POST.get('city', '').strip()
+        state = request.POST.get('state', '').strip()
+        pincode = request.POST.get('pincode', '').strip()
+
+        if not full_name or not phone_number or not shipping_address or not city or not pincode:
+            messages.error(request, "Please fill in all required shipping address fields.")
+            return render(request, 'quiz/redeem_address.html', {
+                'goodie': goodie,
+                'profile': profile,
+                'remaining_xp': profile.total_xp - goodie.coin_cost,
+                'full_name': full_name,
+                'phone_number': phone_number,
+                'shipping_address': shipping_address,
+                'city': city,
+                'state': state,
+                'pincode': pincode,
+            })
+
+        with transaction.atomic():
+            g_locked = GoodieItem.objects.select_for_update().get(pk=pk)
+            prof_locked = UserProfile.objects.select_for_update().get(user=request.user)
+
+            if g_locked.stock <= 0:
+                messages.error(request, f"Sorry, {g_locked.name} is out of stock!")
+                return redirect('quiz:goodies')
+            if prof_locked.total_xp < g_locked.coin_cost:
+                messages.error(request, "Insufficient XP coins to complete redemption!")
+                return redirect('quiz:goodies')
+
+            prof_locked.total_xp -= g_locked.coin_cost
+            prof_locked.save()
+
+            g_locked.stock -= 1
+            g_locked.save()
+
+            order = UserGoodieRedemption.objects.create(
+                user=request.user,
+                goodie=g_locked,
+                full_name=full_name,
+                phone_number=phone_number,
+                shipping_address=shipping_address,
+                city=city,
+                state=state,
+                pincode=pincode,
+                status="Pending Processing"
+            )
+
+            messages.success(request, f"🎉 Order #{order.id} Placed Successfully! Your reward '{goodie.name}' is being processed for shipping.")
+            return redirect('quiz:goodies')
+
+    context = {
+        'goodie': goodie,
+        'profile': profile,
+        'remaining_xp': profile.total_xp - goodie.coin_cost,
+        'full_name': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'quiz/redeem_address.html', context)
+
+

@@ -1,0 +1,16 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls admin_list %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:ai_generate_questions' %}" class="addlink" style="background: linear-gradient(135deg, #0ea5e9, #0284c7) !important; color: #ffffff !important; font-weight: bold !important; border-radius: 6px; padding: 6px 14px; text-shadow: none; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);">
+      🌐 AI Fetch Over Internet
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'admin:ai_generate_questions' %}" class="addlink" style="background: linear-gradient(135deg, #6366f1, #4f46e5) !important; color: #ffffff !important; font-weight: bold !important; border-radius: 6px; padding: 6px 14px; text-shadow: none;">
+      🤖 Local AI Generator
+    </a>
+  </li>
+  {% change_list_object_tools %}
+{% endblock %}

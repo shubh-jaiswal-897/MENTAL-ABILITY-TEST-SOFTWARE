@@ -1,68 +1,195 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Test Session - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+{% block title %}Quiz Arena - Question {{ index|default:1 }} of {{ total|default:10 }} | MENTAL ABILITY TEST SOFTWARE{% endblock %}
 
 {% block content %}
-  {% if error %}
-    <div class="alert alert-danger">{{ error }}</div>
-  {% elif not question %}
-    <div>
-      <form method="get">
-        <input type="hidden" name="action" value="start">
-        <div class="mb-3">
-          <label for="subjects">Subjects</label>
-          <select id="subjects" name="subjects" class="form-select" multiple aria-describedby="subjectsHelp" size="6">
-            {% for s in subjects %}
-            <option value="{{ s.id }}">{{ s.name }}</option>
-            {% endfor %}
-          </select>
-          <div id="subjectsHelp" class="form-text">Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects.</div>
-        </div>
-        <div class="mb-3">
-          <label for="limit">Number of questions (leave blank for default 10)</label>
-          <input id="limit" name="limit" class="form-control" placeholder="10">
-        </div>
-        
-        <p><button class="btn btn-primary" type="submit">Start Test Session</button></p>
-      </form>
-    </div>
-  {% else %}
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>Question {{ index }} / {{ total }}</div>
-          <div id="timer" class="text-danger">Time left: <span id="seconds">{{ remaining_seconds }}</span>s</div>
-        </div>
-        <h4 class="mt-3">{{ question.text }}</h4>
-        <form method="post" id="answerForm">
-          {% csrf_token %}
-          {% for choice in shuffled_choices|default:question.choices.all %}
-          <div class="mb-2">
-            <label class="d-block">
-              <input type="radio" name="choice" value="{{ choice.pk }}" {% if selected_choice == choice.pk %}checked{% endif %}> {{ choice.text }}
-            </label>
+{% if error %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{% endif %}
+
+{% if not question %}
+  <!-- Session Setup Screen -->
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="lc-card p-4">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="p-3 rounded-circle" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-amber);">
+            <i class="fas fa-gamepad fa-2x"></i>
           </div>
-          {% endfor %}
-          {% if index > 1 %}<button class="btn btn-secondary me-2" type="submit" name="action" value="previous">Previous</button>{% endif %}
-          <button class="btn btn-primary me-2" type="submit" name="action" value="next">Next</button>
-          <button class="btn btn-danger" type="submit" name="action" value="end">End Test</button>
+          <div>
+            <h4 class="fw-bold mb-0" style="color: var(--lc-text);">Configure Quiz Arena Session</h4>
+            <p class="small mb-0" style="color: var(--lc-text-muted);">Select your subjects and start an interactive mental ability reasoning session.</p>
+          </div>
+        </div>
+
+        <form method="get" action="{% url 'quiz:test_session' %}">
+          <input type="hidden" name="action" value="start">
+          
+          <div class="mb-4">
+            <label for="subjects" class="form-label fw-bold mb-2" style="color: var(--lc-text);">
+              <i class="fas fa-layer-group me-1" style="color: var(--lc-amber);"></i> Select Subjects
+            </label>
+            <select id="subjects" name="subjects" class="form-select p-3" multiple required style="min-height: 180px; background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+              {% for s in subjects %}
+                <option value="{{ s.id }}" selected class="py-1">&bull; {{ s.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text small mt-1" style="color: var(--lc-text-muted);"><i class="fas fa-info-circle me-1"></i> Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects.</div>
+          </div>
+
+          <div class="mb-4">
+            <label for="limit" class="form-label fw-bold mb-1" style="color: var(--lc-text);">
+              <i class="fas fa-list-ol me-1" style="color: var(--lc-blue);"></i> Number of Questions
+            </label>
+            <input id="limit" name="limit" type="number" min="1" max="50" class="form-control p-2 font-monospace" value="10" placeholder="10" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+
+          <button class="btn btn-lc-primary w-100 py-3 font-monospace fw-bold" type="submit">
+            <i class="fas fa-play me-2"></i> LAUNCH QUIZ ARENA
+          </button>
         </form>
       </div>
     </div>
+  </div>
+{% else %}
+  <!-- LeetCode 2-Pane Quiz Arena -->
+  <div class="arena-container">
+    <!-- LEFT PANE: Question & Problem Workspace -->
+    <div class="arena-pane">
+      <div class="arena-pane-header">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-warning font-monospace fw-bold"><i class="fas fa-code me-1"></i> Problem {{ index }} / {{ total }}</span>
+          <span class="{% if question.difficulty == 'EASY' %}badge-easy{% elif question.difficulty == 'HARD' %}badge-hard{% else %}badge-medium{% endif %} ms-2">
+            {{ question.get_difficulty_display }}
+          </span>
+          {% if is_daily_challenge %}
+            <span class="badge bg-warning text-dark font-monospace"><i class="fas fa-fire me-1"></i> DAILY</span>
+          {% endif %}
+        </div>
+        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-blue); border: 1px solid var(--lc-border-highlight);">{{ question.subject.name|default:"General Aptitude" }}</span>
+      </div>
 
-    <script>
-      let seconds = {{ remaining_seconds }};
-      const secEl = document.getElementById('seconds');
-      const form = document.getElementById('answerForm');
-      const interval = setInterval(()=>{
-        seconds -= 1;
-        if (seconds <= 0) {
-          clearInterval(interval);
-          // submit form (no selection means skip)
-          form.submit();
-        }
-        secEl.textContent = seconds;
-      }, 1000);
-    </script>
-  {% endif %}
+      <div class="arena-pane-body">
+        <!-- Question Text -->
+        <h5 class="fw-bold mb-4 lh-base" style="font-size: 1.25rem; color: var(--lc-text);">
+          {{ question.text }}
+        </h5>
+
+        <!-- Logic Hint & Solution Accordion -->
+        <div class="mt-4 pt-3 border-top border-secondary d-flex flex-wrap gap-2 align-items-center">
+          {% if question.explanation %}
+            <button class="btn btn-lc-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#explanationCollapse" aria-expanded="false">
+              <i class="fas fa-lightbulb text-warning me-1"></i> View Solution Hint
+            </button>
+          {% endif %}
+          <button class="btn btn-lc-secondary btn-sm text-amber" type="button" onclick="openAiChatWithPrompt('Explain this {{ question.subject.name|default:"mental ability" }} question step-by-step: {{ question.text|escapejs }}')">
+            <i class="fas fa-robot me-1"></i> Ask BrainBot AI
+          </button>
+        </div>
+
+        {% if question.explanation %}
+          <div class="collapse mt-3" id="explanationCollapse">
+            <div class="p-3 rounded font-monospace small" style="background-color: var(--lc-surface-hover); color: var(--lc-text); border: 1px solid var(--lc-border-highlight);">
+              <strong class="text-warning d-block mb-1"><i class="fas fa-brain me-1"></i> Logic Breakdown:</strong>
+              {{ question.explanation }}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT PANE: Interactive Options & Timer Workspace -->
+    <div class="arena-pane">
+      <div class="arena-pane-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fas fa-clock text-warning"></i> Time Remaining:
+          <span id="seconds" class="font-monospace text-warning fw-bold fs-5">{{ remaining_seconds }}</span>s
+        </div>
+        <small class="font-monospace d-none d-sm-inline" style="color: var(--lc-text-muted);">Hotkeys: [1-4] to select, [Enter] submit</small>
+      </div>
+
+      <div class="arena-pane-body d-flex flex-column justify-content-between">
+        <form method="post" id="answerForm">
+          {% csrf_token %}
+          <div class="mb-4">
+            <label class="small fw-bold text-uppercase mb-3 d-block font-monospace" style="color: var(--lc-text-muted);">Select the correct choice:</label>
+            
+            {% for choice in shuffled_choices|default:question.choices.all %}
+              <div class="choice-card {% if selected_choice == choice.pk %}active{% endif %}" onclick="selectChoice(this, 'choice_{{ choice.pk }}')">
+                <span class="choice-key">{{ forloop.counter }}</span>
+                <input type="radio" id="choice_{{ choice.pk }}" name="choice" value="{{ choice.pk }}" class="d-none" {% if selected_choice == choice.pk %}checked{% endif %}>
+                <span class="fw-medium" style="color: var(--lc-text);">{{ choice.text }}</span>
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Arena Action Bar -->
+          <div class="d-flex align-items-center gap-2 pt-3 border-top border-secondary">
+            {% if index > 1 %}
+              <button class="btn btn-lc-secondary font-monospace" type="submit" name="action" value="previous">
+                &larr; Prev
+              </button>
+            {% endif %}
+            
+            <button class="btn btn-lc-primary flex-grow-1 font-monospace fw-bold" type="submit" name="action" value="next" id="submitBtn">
+              {% if index == total %}FINISH & SUBMIT &rarr;{% else %}NEXT QUESTION &rarr;{% endif %}
+            </button>
+            
+            <button class="btn btn-outline-danger btn-sm font-monospace" type="submit" name="action" value="end" title="End Session Early">
+              <i class="fas fa-stop-circle me-1"></i> End
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if question %}
+<script>
+  // Timer Countdown Logic
+  let seconds = {{ remaining_seconds }};
+  const secEl = document.getElementById('seconds');
+  const form = document.getElementById('answerForm');
+  const timerInterval = setInterval(() => {
+    seconds -= 1;
+    if (seconds <= 0) {
+      clearInterval(timerInterval);
+      form.submit();
+    }
+    if (secEl) secEl.textContent = seconds;
+  }, 1000);
+
+  // Choice Selection Helper
+  function selectChoice(cardEl, radioId) {
+    document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
+    const radio = document.getElementById(radioId);
+    if (radio) radio.checked = true;
+  }
+
+  // Keyboard Navigation Listener (Hotkeys: 1-4 for options, Enter for submit)
+  document.addEventListener('keydown', function(e) {
+    if (['1', '2', '3', '4'].includes(e.key)) {
+      const idx = parseInt(e.key) - 1;
+      const cards = document.querySelectorAll('.choice-card');
+      if (cards[idx]) {
+        cards[idx].click();
+      }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    }
+  });
+</script>
+{% endif %}
 {% endblock %}

@@ -1,5 +1,15 @@
 import os
 from pathlib import Path
+from django.template.context import BaseContext
+
+# Python 3.14 + Django 4.2 Compatibility Patch for BaseContext.__copy__
+def _python314_context_copy(self):
+    duplicate = object.__new__(self.__class__)
+    duplicate.__dict__.update(self.__dict__)
+    duplicate.dicts = self.dicts[:]
+    return duplicate
+
+BaseContext.__copy__ = _python314_context_copy
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -59,14 +69,7 @@ WSGI_APPLICATION = 'testmybrain.wsgi.application'
 
 import dj_database_url
 
-# Use Supabase on Vercel (via Environment Variable), and SQLite for local development
-if os.environ.get('VERCEL'):
-    DATABASE_URL = os.environ.get(
-        'DATABASE_URL',
-        'postgresql://postgres.uhvafwnceynvcvhdiapl:%21%21T3%3FeZpdDVCrhZ@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require'
-    )
-else:
-    DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     DATABASES = {
@@ -87,7 +90,7 @@ else:
 AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 USE_TZ = True

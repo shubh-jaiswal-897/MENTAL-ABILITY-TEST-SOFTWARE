@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - Shipping Address | {{ goodie.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-3">
+  <div class="col-lg-8 col-xl-7">
+    
+    <!-- Top Header Card -->
+    <div class="lc-card p-4 mb-4">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background-color: var(--lc-surface); border: 1px solid var(--lc-amber); min-width: 55px; min-height: 55px;">
+            <i class="{{ goodie.icon_class|default:'fas fa-gift' }} fa-2x" style="color: var(--lc-amber);"></i>
+          </div>
+          <div>
+            <h4 class="fw-bold mb-1" style="color: var(--lc-text);">Order Checkout & Delivery</h4>
+            <p class="small mb-0" style="color: var(--lc-text-muted);">Confirm shipping details to redeem <strong>{{ goodie.name }}</strong></p>
+          </div>
+        </div>
+        <a href="{% url 'quiz:goodies' %}" class="btn btn-outline-secondary btn-sm font-monospace">
+          &larr; Back to Store
+        </a>
+      </div>
+    </div>
+
+    <!-- Error Alerts -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+          <i class="fas fa-exclamation-circle me-2"></i>{{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Order & XP Summary Card -->
+    <div class="lc-card p-4 mb-4" style="border-left: 4px solid var(--lc-amber);">
+      <h6 class="font-monospace text-uppercase fw-bold mb-3" style="color: var(--lc-amber);">
+        <i class="fas fa-receipt me-2"></i>Reward Order Summary
+      </h6>
+      <div class="row g-3 text-center text-sm-start">
+        <div class="col-sm-4">
+          <small class="d-block text-muted font-monospace mb-1">Item Name</small>
+          <strong style="color: var(--lc-text);">{{ goodie.name }}</strong>
+        </div>
+        <div class="col-sm-4">
+          <small class="d-block text-muted font-monospace mb-1">XP Coin Cost</small>
+          <span class="badge bg-dark border border-warning text-warning fs-6 font-monospace">
+            <i class="fas fa-coins me-1"></i>{{ goodie.coin_cost }} XP
+          </span>
+        </div>
+        <div class="col-sm-4">
+          <small class="d-block text-muted font-monospace mb-1">Remaining Balance</small>
+          <span class="fw-bold font-monospace text-success fs-6">
+            <i class="fas fa-wallet me-1"></i>{{ remaining_xp }} XP
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping Form Card -->
+    <div class="lc-card p-4">
+      <h5 class="fw-bold mb-3" style="color: var(--lc-text);">
+        <i class="fas fa-truck me-2" style="color: var(--lc-blue);"></i>Enter Delivery Shipping Address
+      </h5>
+      <p class="small mb-4" style="color: var(--lc-text-muted);">Please provide your accurate address details so our team can dispatch your physical reward.</p>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+          <!-- Full Name -->
+          <div class="col-md-6">
+            <label for="full_name" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">Full Name <span class="text-danger">*</span></label>
+            <input type="text" id="full_name" name="full_name" class="form-control p-3" value="{{ full_name }}" required placeholder="e.g. Rahul Sharma" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+
+          <!-- Phone Number -->
+          <div class="col-md-6">
+            <label for="phone_number" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">Contact Phone <span class="text-danger">*</span></label>
+            <input type="tel" id="phone_number" name="phone_number" class="form-control p-3 font-monospace" value="{{ phone_number }}" required placeholder="+91 9876543210" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+
+          <!-- Street Address -->
+          <div class="col-12">
+            <label for="shipping_address" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">Street Address & House/Flat No. <span class="text-danger">*</span></label>
+            <textarea id="shipping_address" name="shipping_address" rows="3" class="form-control p-3" required placeholder="Flat / House No., Floor, Building Name, Street / Locality" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">{{ shipping_address }}</textarea>
+          </div>
+
+          <!-- City -->
+          <div class="col-md-4">
+            <label for="city" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">City <span class="text-danger">*</span></label>
+            <input type="text" id="city" name="city" class="form-control p-3" value="{{ city }}" required placeholder="e.g. New Delhi" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+
+          <!-- State -->
+          <div class="col-md-4">
+            <label for="state" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">State</label>
+            <input type="text" id="state" name="state" class="form-control p-3" value="{{ state }}" placeholder="e.g. Delhi / Maharashtra" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+
+          <!-- Pincode -->
+          <div class="col-md-4">
+            <label for="pincode" class="form-label fw-bold small text-uppercase font-monospace" style="color: var(--lc-text);">Pincode / Postal Code <span class="text-danger">*</span></label>
+            <input type="text" id="pincode" name="pincode" class="form-control p-3 font-monospace" value="{{ pincode }}" required placeholder="110001" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          </div>
+        </div>
+
+        <hr class="my-4" style="border-color: var(--lc-border-highlight);">
+
+        <!-- Action Bar -->
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <a href="{% url 'quiz:goodies' %}" class="btn btn-outline-secondary px-4 py-2 font-monospace">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-lc-primary px-5 py-3 font-monospace fw-bold">
+            <i class="fas fa-check-circle me-2"></i> CONFIRM & SUBMIT ORDER
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

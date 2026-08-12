@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Goodies Rewards Store - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <!-- Header Banner -->
+  <div class="col-12">
+    <div class="lc-card p-4 position-relative overflow-hidden" style="background: var(--lc-surface); border-left: 4px solid var(--lc-easy);">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <span class="badge bg-success text-dark font-monospace fw-bold mb-2"><i class="fas fa-gift me-1"></i> REWARDS STORE</span>
+          <h3 class="fw-bold mb-1" style="color: var(--lc-text);">Goodies & Merchandise Rewards</h3>
+          <p class="small mb-0" style="color: var(--lc-text-muted);">Redeem your hard-earned contest XP & Goodies Coins for physical merchandise and official digital certificates!</p>
+        </div>
+
+        <div class="px-4 py-2 rounded text-center" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-easy);">
+          <div class="fs-4 fw-bold font-monospace" style="color: var(--lc-amber);"><i class="fas fa-bolt me-1"></i> {{ profile.total_xp|default:0 }} XP</div>
+          <small class="font-monospace" style="color: var(--lc-text-muted);">Your Goodies Coins Balance</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goodies Items Grid -->
+  <div class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-store me-2" style="color: var(--lc-amber);"></i> Available Goodies & Rewards</h5>
+      <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">{{ goodies|length }} Items Available</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      {% for item in goodies %}
+        <div class="col-md-6">
+          <div class="lc-card h-100 d-flex flex-column justify-content-between p-3 overflow-hidden">
+            <div>
+              <!-- Product Image Mockup or Icon Header -->
+              {% if item.image_path %}
+                <div class="position-relative mb-3 rounded overflow-hidden text-center" style="height: 180px; background-color: var(--lc-surface-hover);">
+                  <img src="{% static item.image_path %}" alt="{{ item.name }}" class="w-100 h-100" style="object-fit: cover;">
+                  <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark font-monospace fs-6 fw-bold shadow">
+                    <i class="fas fa-bolt me-1"></i> {{ item.coin_cost }} XP
+                  </span>
+                </div>
+              {% else %}
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div class="p-3 rounded fs-3" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">
+                    <i class="{{ item.icon_class }}"></i>
+                  </div>
+                  <span class="badge bg-warning text-dark font-monospace fs-6 fw-bold">
+                    <i class="fas fa-bolt me-1"></i> {{ item.coin_cost }} XP
+                  </span>
+                </div>
+              {% endif %}
+
+              <h5 class="fw-bold mb-2" style="color: var(--lc-text);">{{ item.name }}</h5>
+              <p class="small mb-3" style="color: var(--lc-text-muted);">{{ item.description }}</p>
+            </div>
+
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center" style="border-color: var(--lc-border-highlight) !important;">
+              <small class="font-monospace" style="color: var(--lc-text-muted);"><i class="fas fa-boxes me-1"></i> Stock: {{ item.stock }} left</small>
+
+              {% if profile.total_xp >= item.coin_cost %}
+                <a href="{% url 'quiz:redeem_goodie' item.id %}" class="btn btn-lc-primary btn-sm font-monospace">
+                  <i class="fas fa-truck me-1"></i> Redeem & Ship
+                </a>
+              {% else %}
+                <button class="btn btn-lc-secondary btn-sm font-monospace disabled" disabled>
+                  Need {{ item.coin_cost }} XP
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12">
+          <div class="lc-card text-center py-5">
+            <p class="mb-0" style="color: var(--lc-text-muted);">No goodies items available in rewards store right now.</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right Sidebar Column: User Redemption Orders History -->
+  <div class="col-lg-4">
+    <div class="lc-card p-3 shadow-sm" style="max-height: 720px; overflow-y: auto;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-receipt me-2" style="color: var(--lc-amber);"></i> My Redemptions</h6>
+        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">ORDER HISTORY</span>
+      </div>
+
+      <div class="list-group list-group-flush">
+        {% for r in user_redemptions %}
+          <div class="list-group-item px-0 py-3 bg-transparent border-bottom" style="border-color: var(--lc-border-highlight) !important;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <h6 class="fw-bold mb-1" style="color: var(--lc-text);">{{ r.goodie.name }}</h6>
+                <small class="font-monospace d-block" style="font-size: 0.78rem; color: var(--lc-text-muted);">
+                  Order #{{ r.id }} &bull; {{ r.redeemed_at|date:"M d, Y" }}
+                </small>
+              </div>
+              <span class="badge {% if r.status == 'Delivered 🎉' %}bg-success{% elif r.status == 'Shipped 🚚' %}bg-info text-dark{% elif r.status == 'Cancelled ❌' %}bg-danger{% else %}bg-warning text-dark{% endif %} font-monospace">
+                {{ r.status }}
+              </span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center small font-monospace mt-2" style="color: var(--lc-text-muted);">
+              <span style="color: var(--lc-amber);"><i class="fas fa-coins me-1"></i> -{{ r.goodie.coin_cost }} XP</span>
+              {% if r.shipping_address %}
+                <button class="btn btn-link btn-sm p-0 text-decoration-none font-monospace" type="button" data-bs-toggle="collapse" data-bs-target="#orderAddress{{ r.id }}" aria-expanded="false" style="color: var(--lc-blue); font-size: 0.8rem;">
+                  <i class="fas fa-truck me-1"></i> Shipping Details &darr;
+                </button>
+              {% endif %}
+            </div>
+
+            {% if r.shipping_address %}
+              <div class="collapse mt-2" id="orderAddress{{ r.id }}">
+                <div class="p-3 rounded font-monospace small" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight); color: var(--lc-text);">
+                  <div class="fw-bold mb-1" style="color: var(--lc-amber);"><i class="fas fa-map-marker-alt me-1"></i> Delivery Address:</div>
+                  <div><strong>{{ r.full_name }}</strong> ({% if r.phone_number %}{{ r.phone_number }}{% endif %})</div>
+                  <div>{{ r.shipping_address }}</div>
+                  <div>{{ r.city }}{% if r.state %}, {{ r.state }}{% endif %} - {{ r.pincode }}</div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="small text-center py-4 mb-0" style="color: var(--lc-text-muted);">You haven't redeemed any goodies yet. Earn XP in contests and daily challenges to unlock rewards!</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

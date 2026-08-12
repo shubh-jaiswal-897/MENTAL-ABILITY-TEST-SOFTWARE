@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url 'admin:quiz_question_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; AI & Web Question Fetcher
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" style="max-width: 800px; margin-top: 15px;">
+  
+  <!-- Header Banner -->
+  <div style="background: linear-gradient(135deg, #0ea5e9, #4f46e5); padding: 22px 28px; border-radius: 12px 12px 0 0; color: #ffffff; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);">
+    <div style="background: rgba(255, 255, 255, 0.2); min-width: 60px; min-height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; border: 2px solid rgba(255, 255, 255, 0.5);">
+      🌐
+    </div>
+    <div>
+      <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">AI & Web Question Fetcher</h2>
+      <p style="margin: 6px 0 0 0; color: #e0f2fe; font-size: 15px; font-weight: 500;">Fetch real aptitude & reasoning questions live over the internet or generate reasoning questions locally.</p>
+    </div>
+  </div>
+
+  <!-- Form Body Container -->
+  <div class="module" style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #cbd5e1; border-top: none; color: #0f172a; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);">
+    
+    <form method="post">
+      {% csrf_token %}
+      
+      <!-- Source Selection -->
+      <div style="margin-bottom: 22px;">
+        <label for="source" style="display: block; font-weight: 700; margin-bottom: 8px; color: #0f172a; font-size: 15px;">
+          <span style="color: #0ea5e9;">1.</span> Generation Mode / Source:
+        </label>
+        <select id="source" name="source" style="width: 100%; padding: 12px; border-radius: 8px; background: #f8fafc; color: #0f172a; border: 2px solid #0ea5e9; font-weight: 700; font-size: 15px; cursor: pointer;">
+          <option value="internet" selected style="color: #0f172a; background: #ffffff;">🌐 Fetch Live Questions Over Internet (Web API)</option>
+          <option value="local_ai" style="color: #0f172a; background: #ffffff;">🤖 Local AI Reasoning Engine</option>
+        </select>
+      </div>
+
+      <!-- Subject Selection -->
+      <div style="margin-bottom: 22px;">
+        <label for="subject" style="display: block; font-weight: 700; margin-bottom: 8px; color: #0f172a; font-size: 15px;">
+          <span style="color: #0ea5e9;">2.</span> Select Target Subject / Category:
+        </label>
+        <select id="subject" name="subject" style="width: 100%; padding: 12px; border-radius: 8px; background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; font-weight: 600; font-size: 15px; cursor: pointer;">
+          <option value="" style="color: #0f172a;">-- Auto Match Category --</option>
+          {% for s in subjects %}
+            <option value="{{ s.id }}" style="color: #0f172a;">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Difficulty Selection -->
+      <div style="margin-bottom: 22px;">
+        <label for="difficulty" style="display: block; font-weight: 700; margin-bottom: 8px; color: #0f172a; font-size: 15px;">
+          <span style="color: #0ea5e9;">3.</span> Select Difficulty Level:
+        </label>
+        <select id="difficulty" name="difficulty" style="width: 100%; padding: 12px; border-radius: 8px; background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; font-weight: 600; font-size: 15px; cursor: pointer;">
+          <option value="" style="color: #0f172a;">-- Mixed Difficulties --</option>
+          <option value="EASY" style="color: #0f172a;">🟢 Easy (+1 XP)</option>
+          <option value="MEDIUM" style="color: #0f172a;">🟡 Medium (+2 XP)</option>
+          <option value="HARD" style="color: #0f172a;">🔴 Hard (+3 XP)</option>
+        </select>
+      </div>
+
+      <!-- Count Input -->
+      <div style="margin-bottom: 30px;">
+        <label for="count" style="display: block; font-weight: 700; margin-bottom: 8px; color: #0f172a; font-size: 15px;">
+          <span style="color: #0ea5e9;">4.</span> Number of Questions to Fetch:
+        </label>
+        <input type="number" id="count" name="count" min="1" max="25" value="5" style="width: 100%; padding: 12px; border-radius: 8px; background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; font-weight: 700; font-size: 15px;">
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 25px;">
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
+        <button type="submit" onclick="document.getElementById('source').value='internet'" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #ffffff; font-weight: 800; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35); text-transform: uppercase; letter-spacing: 0.03em;">
+          🌐 Fetch Questions Over Internet
+        </button>
+
+        <button type="submit" onclick="document.getElementById('source').value='local_ai'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; font-weight: 800; border: none; padding: 14px 28px; border-radius: 8px; cursor: pointer; font-size: 15px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); text-transform: uppercase; letter-spacing: 0.03em;">
+          🤖 Local AI Generator
+        </button>
+
+        <a href="{% url 'admin:quiz_question_changelist' %}" style="background: #64748b; color: #ffffff; padding: 14px 22px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+          Cancel
+        </a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+<!-- Cyberpunk Glassmorphism Floating AI Chatbot Widget -->
+<div id="aiChatbotContainer" class="ai-chatbot-wrapper">
+  <!-- Launcher Button -->
+  <button id="aiChatLauncher" class="ai-launcher-btn" onclick="toggleAiChatbot()" title="Open BrainBot Cyber AI Tutor">
+    <div class="ai-launcher-glow"></div>
+    <div class="ai-launcher-icon">
+      <i class="fas fa-brain-circuit"></i>
+      <i class="fas fa-robot"></i>
+    </div>
+    <div class="ai-launcher-text-box d-none d-md-flex flex-column text-start ms-2 me-1">
+      <span class="ai-launcher-title font-monospace fw-extrabold">BrainBot AI</span>
+      <span class="ai-launcher-sub font-monospace">Cognitive Tutor</span>
+    </div>
+    <span id="aiStatusDot" class="ai-status-pulse online" title="BrainBot AI Ready"></span>
+  </button>
+
+  <!-- Glassmorphism Chat Panel -->
+  <div id="aiChatWindow" class="ai-chat-window d-none">
+    <!-- Chat Header -->
+    <div class="ai-chat-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <div class="ai-avatar-orb">
+          <i class="fas fa-brain"></i>
+          <span class="orb-ring"></span>
+        </div>
+        <div>
+          <h6 class="mb-0 fw-extrabold font-monospace text-glow-amber">BrainBot AI</h6>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <!-- Model Selector Dropdown -->
+        <div class="model-select-wrapper">
+          <select id="aiModelSelect" class="form-select form-select-sm ai-model-select font-monospace"
+            title="Select Local/Cloud AI Model" onchange="changeAiModel(this.value)">
+            <option value="llama3.2:1b">llama3.2:1b</option>
+          </select>
+        </div>
+
+        <button class="btn btn-sm ai-header-icon-btn text-muted hover-amber" onclick="clearAiChat()"
+          title="Clear Chat History">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+
+        <button class="btn btn-sm ai-header-icon-btn text-muted hover-danger" onclick="toggleAiChatbot()"
+          title="Close Chat">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Chips Bar -->
+    <div class="ai-chips-bar px-3 py-2 d-flex gap-2 overflow-x-auto">
+      <button class="badge ai-chip-neon"
+        onclick="sendQuickPrompt('Explain syllogisms with a clear Euler diagram example.')">
+        <i class="fas fa-project-diagram me-1 text-info"></i> Syllogisms
+      </button>
+      <button class="badge ai-chip-neon"
+        onclick="sendQuickPrompt('What is the train speed & distance conversion formula?')">
+        <i class="fas fa-subway me-1 text-warning"></i> Speed Formula
+      </button>
+      <button class="badge ai-chip-neon" onclick="sendQuickPrompt('Give me a high-yield logical reasoning puzzle.')">
+        <i class="fas fa-puzzle-piece me-1 text-success"></i> Aptitude Puzzle
+      </button>
+      <button class="badge ai-chip-neon"
+        onclick="sendQuickPrompt('Give me 3 mental math tricks for fast calculation.')">
+        <i class="fas fa-bolt me-1 text-amber"></i> Fast Math
+      </button>
+      <button class="badge ai-chip-neon"
+        onclick="sendQuickPrompt('How do I solve coding & decoding alphabet shift questions?')">
+        <i class="fas fa-font me-1 text-danger"></i> Coding Shift
+      </button>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div id="aiChatMessages" class="ai-chat-messages p-3">
+      <!-- Welcome Message -->
+      <div class="ai-msg assistant-msg fade-in">
+        <div class="msg-avatar-glow"><i class="fas fa-robot"></i></div>
+        <div class="msg-bubble assistant-bubble">
+          <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
+            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-sparkles me-1"></i> BrainBot
+              AI</span>
+            <small class="text-muted font-monospace fs-xs">System Online</small>
+          </div>
+          Hello! I'm <strong>BrainBot AI</strong>, your interactive cognitive & mental ability tutor. 🧠✨
+          <br><br>
+          I can help you master <strong>logical reasoning</strong>, <strong>quantitative aptitude</strong>,
+          <strong>speed-distance formulas</strong>, and <strong>mental math shortcuts</strong>!
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Wave Indicator -->
+    <div id="aiTypingIndicator" class="ai-typing-bar px-3 py-2 d-none">
+      <div class="msg-avatar-glow"><i class="fas fa-robot"></i></div>
+      <div class="wave-bars ms-2">
+        <span class="bar bar-1"></span>
+        <span class="bar bar-2"></span>
+        <span class="bar bar-3"></span>
+        <span class="bar bar-4"></span>
+      </div>
+      <small class="font-monospace text-muted ms-2 fs-xs">BrainBot AI is computing step-by-step logic...</small>
+    </div>
+
+    <!-- Input Footer -->
+    <div class="ai-chat-footer p-2 border-top">
+      <form id="aiChatForm" onsubmit="handleAiChatSubmit(event)" class="d-flex align-items-center gap-2">
+        <div class="input-wrapper flex-grow-1">
+          <textarea id="aiChatInput" class="form-control ai-input-glow" rows="1"
+            placeholder="Ask BrainBot any question or formula..." onkeydown="handleAiInputKeydown(event)"></textarea>
+        </div>
+        <button type="submit" id="aiSendBtn" class="btn ai-send-gradient-btn" title="Send Message (Enter)">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  let aiConversationHistory = [];
+  let currentAiModel = 'llama3.2:1b';
+
+  document.addEventListener('DOMContentLoaded', function () {
+    loadAiChatHistory();
+    checkOllamaStatus();
+  });
+
+  function toggleAiChatbot() {
+    const win = document.getElementById('aiChatWindow');
+    if (win.classList.contains('d-none')) {
+      win.classList.remove('d-none');
+      document.getElementById('aiChatInput').focus();
+      scrollToBottom();
+    } else {
+      win.classList.add('d-none');
+    }
+  }
+
+  function openAiChatWithPrompt(promptText) {
+    const win = document.getElementById('aiChatWindow');
+    if (win.classList.contains('d-none')) {
+      win.classList.remove('d-none');
+    }
+    const input = document.getElementById('aiChatInput');
+    input.value = promptText;
+    input.focus();
+    scrollToBottom();
+  }
+
+  async function checkOllamaStatus() {
+    const dot = document.getElementById('aiStatusDot');
+    const select = document.getElementById('aiModelSelect');
+
+    try {
+      const resp = await fetch("{% url 'quiz:ai_models' %}");
+      const data = await resp.json();
+      if (data.success && data.is_running && data.models.length > 0) {
+        dot.className = 'ai-status-pulse online';
+        dot.title = `AI Engine active (${data.models.length} model(s) detected)`;
+
+        select.innerHTML = '';
+        data.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.innerText = m;
+          if (m === data.default_model) opt.selected = true;
+          select.appendChild(opt);
+        });
+        currentAiModel = select.value;
+      } else {
+        dot.className = 'ai-status-pulse hybrid';
+        dot.title = 'Hybrid AI Engine Ready (Cloud & Smart Solver Active)';
+      }
+    } catch (e) {
+      dot.className = 'ai-status-pulse hybrid';
+    }
+  }
+
+  function changeAiModel(val) {
+    currentAiModel = val;
+  }
+
+  function handleAiInputKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAiChatSubmit(e);
+    }
+  }
+
+  function sendQuickPrompt(promptText) {
+    document.getElementById('aiChatInput').value = promptText;
+    handleAiChatSubmit(new Event('submit'));
+  }
+
+  async function handleAiChatSubmit(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('aiChatInput');
+    const prompt = input.value.trim();
+    if (!prompt) return;
+
+    input.value = '';
+
+    // Add user message to UI & history
+    appendMessage('user', prompt);
+    aiConversationHistory.push({ role: 'user', content: prompt });
+    saveAiChatHistory();
+
+    showTypingIndicator(true);
+    scrollToBottom();
+
+    try {
+      const resp = await fetch("{% url 'quiz:ai_chat' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: currentAiModel,
+          messages: aiConversationHistory
+        })
+      });
+
+      const data = await resp.json();
+      showTypingIndicator(false);
+
+      if (data.success) {
+        const reply = data.response;
+        appendMessage('assistant', reply, data.source);
+        aiConversationHistory.push({ role: 'assistant', content: reply });
+        saveAiChatHistory();
+      } else {
+        const errText = data.error || "Could not generate response.";
+        appendMessage('assistant', `⚠️ **Notice**: ${errText}`);
+      }
+    } catch (err) {
+      showTypingIndicator(false);
+      appendMessage('assistant', `⚠️ **Network Error**: Unable to reach backend endpoint.`);
+    }
+
+    scrollToBottom();
+  }
+
+  function appendMessage(role, content, sourceTag = null) {
+    const container = document.getElementById('aiChatMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-msg ${role}-msg fade-in`;
+
+    const avatarIcon = role === 'user' ? 'fa-user-astronaut' : 'fa-robot';
+    const parsedHtml = formatMarkdown(content);
+
+    msgDiv.innerHTML = `
+      <div class="msg-avatar-glow"><i class="fas ${avatarIcon}"></i></div>
+      <div class="msg-bubble ${role}-bubble">
+        ${role === 'assistant' ? `
+          <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
+            <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-brain me-1"></i> BrainBot AI</span>
+          </div>
+        ` : ''}
+        <div class="bubble-text">${parsedHtml}</div>
+        ${role === 'assistant' ? `
+          <div class="bubble-actions mt-2 d-flex gap-2">
+            <button class="btn btn-xs btn-copy-msg" onclick="copyToClipboard(this, \`${escapeJsText(content)}\`)" title="Copy Answer">
+              <i class="fas fa-copy me-1"></i> Copy
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    container.appendChild(msgDiv);
+  }
+
+  function showTypingIndicator(show) {
+    const el = document.getElementById('aiTypingIndicator');
+    if (show) el.classList.remove('d-none');
+    else el.classList.add('d-none');
+  }
+
+  function scrollToBottom() {
+    const container = document.getElementById('aiChatMessages');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function clearAiChat() {
+    if (confirm('Clear BrainBot AI conversation history?')) {
+      aiConversationHistory = [];
+      localStorage.removeItem('brainbot_chat_history_v2');
+      const container = document.getElementById('aiChatMessages');
+      container.innerHTML = `
+        <div class="ai-msg assistant-msg fade-in">
+          <div class="msg-avatar-glow"><i class="fas fa-robot"></i></div>
+          <div class="msg-bubble assistant-bubble">
+            <div class="bubble-header d-flex justify-content-between align-items-center mb-1">
+              <span class="font-monospace fw-bold fs-xs text-amber"><i class="fas fa-sparkles me-1"></i> BrainBot AI</span>
+            </div>
+            Chat history cleared! Ready for your next reasoning or aptitude question. 🧠✨
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function saveAiChatHistory() {
+    try {
+      localStorage.setItem('brainbot_chat_history_v2', JSON.stringify(aiConversationHistory.slice(-20)));
+    } catch (e) { }
+  }
+
+  function loadAiChatHistory() {
+    try {
+      const saved = localStorage.getItem('brainbot_chat_history_v2');
+      if (saved) {
+        aiConversationHistory = JSON.parse(saved);
+        if (Array.isArray(aiConversationHistory) && aiConversationHistory.length > 0) {
+          aiConversationHistory.forEach(m => {
+            appendMessage(m.role, m.content);
+          });
+        }
+      }
+    } catch (e) { }
+  }
+
+  function formatMarkdown(text) {
+    if (!text) return '';
+    let html = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Code blocks ``` ... ```
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="ai-code-block"><code>$1</code></pre>');
+    // Inline code `...`
+    html = html.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+    // Headings ### ...
+    html = html.replace(/^### (.*$)/gim, '<h6 class="fw-bold text-amber mt-2 mb-1">$1</h6>');
+    html = html.replace(/^#### (.*$)/gim, '<strong class="text-info font-monospace d-block mt-2 mb-1">$1</strong>');
+    // Bold **...**
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // Italic *...*
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    // Lists
+    html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ms-3">$1</li>');
+    // Newlines
+    html = html.replace(/\n/g, '<br>');
+
+    return html;
+  }
+
+  function escapeJsText(str) {
+    return str.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  }
+
+  function copyToClipboard(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check text-success me-1"></i> Copied!';
+      setTimeout(() => { btn.innerHTML = original; }, 2000);
+    });
+  }
+</script>

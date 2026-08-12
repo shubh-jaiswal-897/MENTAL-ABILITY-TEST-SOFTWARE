@@ -1,20 +1,168 @@
 {% extends 'base.html' %}
 
-{% block title %}Test Result - MENTAL ABILITY TEST SOFTWARE{% endblock %}
+{% block title %}Arena Session Result - MENTAL ABILITY TEST SOFTWARE{% endblock %}
 
 {% block content %}
-  <!-- ...existing code... -->
+<div class="row justify-content-center py-4">
+  <div class="col-lg-6 text-center">
+    <div class="lc-card p-5" style="background-color: var(--lc-surface); color: var(--lc-text); border: 1px solid var(--lc-amber);">
+      <div class="mb-3">
+        {% if percentage >= 80 %}
+          <div class="text-warning fs-1"><i class="fas fa-trophy"></i></div>
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Victory! Exceptional Work</h3>
+        {% elif percentage >= 50 %}
+          <div class="text-info fs-1"><i class="fas fa-medal"></i></div>
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Good Attempt! Keep Pushing</h3>
+        {% else %}
+          <div class="text-secondary fs-1"><i class="fas fa-redo"></i></div>
+          <h3 class="fw-bold mt-2" style="color: var(--lc-text);">Arena Completed</h3>
+        {% endif %}
+      </div>
 
-  <div class="card">
-    <div class="card-body">
-        <h2 class="mb-3">Test Complete</h2>
+      <!-- XP Earned Banner -->
+      <div class="p-3 mb-4 rounded" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-amber);">
+        <span class="text-warning font-monospace fs-4 fw-bold">
+          <i class="fas fa-bolt me-1"></i> +{{ xp_earned }} XP EARNED
+        </span>
+        {% if is_daily_challenge %}
+          <div class="text-danger small font-monospace mt-1"><i class="fas fa-fire me-1"></i> 2x Daily Challenge Bonus Applied!</div>
+        {% endif %}
+      </div>
 
-        <p>Your score: {{ score }} / {{ total }}</p>
-        <p>Marks obtained: {{ marks }} / {{ max_marks }}</p>
-        <p>Percentage: {{ percentage }}%</p>
+      <!-- Performance Metrics Grid -->
+      <div class="row g-3 mb-4 text-center">
+        <div class="col-4">
+          <div class="p-2 rounded" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight);">
+            <div class="fs-4 fw-bold text-warning font-monospace">{{ score }} / {{ total }}</div>
+            <small class="text-muted font-monospace">Correct</small>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight);">
+            <div class="fs-4 fw-bold text-info font-monospace">{{ percentage }}%</div>
+            <small class="text-muted font-monospace">Accuracy</small>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded" style="background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight);">
+            <div class="fs-4 fw-bold text-success font-monospace"><i class="fas fa-fire me-1"></i>{{ profile.streak_count|default:1 }}d</div>
+            <small class="text-muted font-monospace">Active Streak</small>
+          </div>
+        </div>
+      </div>
 
-        <a class="btn btn-primary" href="{% url 'quiz:index' %}">Back to Questions</a>
+      <!-- Action Buttons -->
+      <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+        <a class="btn btn-lc-primary py-2 px-4 font-monospace fw-bold" href="{% url 'quiz:test_session' %}">
+          <i class="fas fa-play me-1"></i> NEXT SESSION
+        </a>
+        <a class="btn btn-lc-secondary py-2 px-4 font-monospace" href="{% url 'quiz:dashboard' %}">
+          <i class="fas fa-chart-line me-1"></i> VIEW DASHBOARD
+        </a>
+      </div>
     </div>
   </div>
-  <!-- ...existing code... -->
+
+  <!-- Question-by-Question Detailed Options & Solutions Breakdown -->
+  {% if question_breakdown %}
+    <div class="col-lg-10 mt-5">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h4 class="fw-bold mb-0" style="color: var(--lc-text);">
+          <i class="fas fa-list-check me-2" style="color: var(--lc-amber);"></i> Question & Answer Breakdown
+        </h4>
+        <span class="badge font-monospace fs-6" style="background-color: var(--lc-surface-hover); color: var(--lc-text); border: 1px solid var(--lc-border-highlight);">
+          {{ score }} / {{ total }} Correct
+        </span>
+      </div>
+
+      <div class="d-flex flex-column gap-4">
+        {% for item in question_breakdown %}
+          <div class="lc-card p-4 position-relative" style="background-color: var(--lc-surface); border-left: 4px solid {% if item.status == 'CORRECT' %}var(--lc-easy){% elif item.status == 'INCORRECT' %}var(--lc-hard){% else %}var(--lc-text-muted){% endif %};">
+            
+            <!-- Question Header -->
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-3 flex-wrap">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge font-monospace fw-bold fs-6" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">
+                  Question #{{ item.num }}
+                </span>
+                <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-blue); border: 1px solid var(--lc-border-highlight);">
+                  {{ item.subject_name }}
+                </span>
+                <span class="{% if item.difficulty_code == 'EASY' %}badge-easy{% elif item.difficulty_code == 'HARD' %}badge-hard{% else %}badge-medium{% endif %}">
+                  {{ item.difficulty }}
+                </span>
+              </div>
+
+              <!-- Status Badge -->
+              <div>
+                {% if item.status == 'CORRECT' %}
+                  <span class="badge badge-easy fs-6"><i class="fas fa-check-circle me-1"></i> CORRECT (+1)</span>
+                {% elif item.status == 'INCORRECT' %}
+                  <span class="badge badge-hard fs-6"><i class="fas fa-times-circle me-1"></i> INCORRECT</span>
+                {% else %}
+                  <span class="badge font-monospace fs-6" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">
+                    <i class="fas fa-minus-circle me-1"></i> SKIPPED
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Question Text -->
+            <h5 class="fw-bold mb-3 lh-base" style="color: var(--lc-text);">
+              {{ item.text }}
+            </h5>
+
+            <!-- Options Grid -->
+            <div class="row g-2 mb-3">
+              {% for opt in item.choices %}
+                <div class="col-12 col-md-6">
+                  <div class="p-3 rounded d-flex align-items-center justify-content-between h-100" style="
+                    {% if opt.is_correct and opt.is_selected %}
+                      background-color: rgba(5, 150, 105, 0.15); border: 2px solid var(--lc-easy); color: var(--lc-text);
+                    {% elif opt.is_correct %}
+                      background-color: rgba(5, 150, 105, 0.1); border: 2px solid var(--lc-easy); color: var(--lc-text);
+                    {% elif opt.is_selected %}
+                      background-color: rgba(220, 38, 38, 0.15); border: 2px solid var(--lc-hard); color: var(--lc-text);
+                    {% else %}
+                      background-color: var(--lc-surface-hover); border: 1px solid var(--lc-border-highlight); color: var(--lc-text-muted);
+                    {% endif %}
+                  ">
+                    <div class="d-flex align-items-center gap-2 me-2">
+                      <span class="font-monospace fw-bold small opacity-75">{{ forloop.counter }}.</span>
+                      <span class="fw-semibold">{{ opt.text }}</span>
+                    </div>
+
+                    <div>
+                      {% if opt.is_correct and opt.is_selected %}
+                        <span class="badge bg-success text-white font-monospace small"><i class="fas fa-check me-1"></i> Correct Answer</span>
+                      {% elif opt.is_correct %}
+                        <span class="badge bg-success text-white font-monospace small"><i class="fas fa-check me-1"></i> Correct Answer</span>
+                      {% elif opt.is_selected %}
+                        <span class="badge bg-danger text-white font-monospace small"><i class="fas fa-times me-1"></i> Your Choice</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Explanation & AI Help Bar -->
+            {% if item.explanation %}
+              <div class="p-3 rounded font-monospace small mt-2" style="background-color: var(--lc-surface-hover); color: var(--lc-text); border: 1px solid var(--lc-amber-glow);">
+                <strong style="color: var(--lc-amber);"><i class="fas fa-brain me-1"></i> Logic Explanation:</strong>
+                <p class="mb-0 mt-1 lh-relaxed">{{ item.explanation }}</p>
+              </div>
+            {% endif %}
+
+            <div class="mt-3 text-end">
+              <button class="btn btn-lc-secondary btn-sm" type="button" onclick="openAiChatWithPrompt('Explain question #{{ item.num }}: {{ item.text|escapejs }} \nCorrect Answer: {{ item.correct_choice|escapejs }}')">
+                <i class="fas fa-robot me-1" style="color: var(--lc-amber);"></i> Ask BrainBot AI for details
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
 {% endblock %}
