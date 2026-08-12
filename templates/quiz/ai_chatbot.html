@@ -181,6 +181,8 @@
     currentAiModel = val;
   }
 
+  let isSendingAiMessage = false;
+
   function handleAiInputKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -189,17 +191,24 @@
   }
 
   function sendQuickPrompt(promptText) {
-    document.getElementById('aiChatInput').value = promptText;
+    const input = document.getElementById('aiChatInput');
+    if (input) input.value = promptText;
     handleAiChatSubmit(new Event('submit'));
   }
 
   async function handleAiChatSubmit(e) {
-    if (e) e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSendingAiMessage) return;
+
     const input = document.getElementById('aiChatInput');
-    const prompt = input.value.trim();
+    const prompt = input ? input.value.trim() : '';
     if (!prompt) return;
 
+    isSendingAiMessage = true;
     input.value = '';
+
+    const sendBtn = document.getElementById('aiSendBtn');
+    if (sendBtn) sendBtn.disabled = true;
 
     // Add user message to UI & history
     appendMessage('user', prompt);
@@ -210,11 +219,15 @@
     scrollToBottom();
 
     try {
+      const csrfToken = getCookie('csrftoken');
+      const headers = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
       const resp = await fetch("{% url 'quiz:ai_chat' %}", {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify({
-          model: currentAiModel,
+          model: currentAiModel || 'brain-ai',
           messages: aiConversationHistory
         })
       });
@@ -222,21 +235,39 @@
       const data = await resp.json();
       showTypingIndicator(false);
 
-      if (data.success) {
+      if (data && data.success) {
         const reply = data.response;
         appendMessage('assistant', reply, data.source, true);
         aiConversationHistory.push({ role: 'assistant', content: reply });
         saveAiChatHistory();
       } else {
-        const errText = data.error || "Could not generate response.";
-        appendMessage('assistant', `⚠️ **Notice**: ${errText}`);
+        const errText = (data && data.error) ? data.error : "Could not generate response.";
+        appendMessage('assistant', `⚠️ **Notice**: ${errText}`, null, false);
       }
     } catch (err) {
       showTypingIndicator(false);
-      appendMessage('assistant', `⚠️ **Network Error**: Unable to reach backend endpoint.`);
+      appendMessage('assistant', `⚠️ **Network Notice**: Unable to reach AI engine endpoint.`, null, false);
+    } finally {
+      isSendingAiMessage = false;
+      if (sendBtn) sendBtn.disabled = false;
+      if (input) input.focus();
+      scrollToBottom();
     }
+  }
 
-    scrollToBottom();
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
   }
 
   function appendMessage(role, content, sourceTag = null, animate = false) {
