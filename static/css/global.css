@@ -87,7 +87,7 @@
     --lc-nav-bg: rgba(10, 46, 33, 0.95);
 }
 
-/* Theme Selector Control Styling */
+/* Theme & Language Selector Control Styling */
 .theme-selector {
     background-color: var(--lc-surface);
     color: var(--lc-text);
@@ -101,6 +101,27 @@
     outline: none;
     transition: all 0.25s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Hide default Google Translate UI elements for a clean native experience */
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-spinner-pos,
+.goog-text-highlight,
+.goog-logo-link,
+.goog-te-gadget span {
+    display: none !important;
+}
+body {
+    top: 0px !important;
+    position: static !important;
+}
+.skiptranslate {
+    display: none !important;
+}
+#google_translate_element {
+    display: none !important;
 }
 
 .theme-selector:hover,

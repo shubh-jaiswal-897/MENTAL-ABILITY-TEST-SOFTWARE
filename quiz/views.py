@@ -363,12 +363,17 @@ def test_session(request):
     elapsed_seconds = timezone.now().timestamp() - float(start_ts)
     duration_seconds = int(request.session.get('test_duration', 3 * 60))
     remaining_seconds = int(duration_seconds - elapsed_seconds)
+
     if remaining_seconds <= 0:
         return _finish_test_session(request, start_ts, qs)
 
     index = int(request.session.get('test_index', 0))
 
     if request.method == 'POST':
+        action = request.POST.get('action', 'next')
+        if elapsed_seconds >= duration_seconds or action == 'end':
+            return _finish_test_session(request, start_ts, qs)
+
         try:
             selected = int(request.POST.get('choice'))
         except Exception:
@@ -381,7 +386,6 @@ def test_session(request):
             request.session['test_answers'] = answers
             request.session.modified = True
 
-        action = request.POST.get('action', 'next')
         if action == 'previous':
             index -= 1
             request.session['test_index'] = max(0, index)
@@ -390,10 +394,7 @@ def test_session(request):
             index += 1
             request.session['test_index'] = index
 
-        is_timed_out = elapsed_seconds >= duration_seconds
-        is_finished = index >= len(qs)
-
-        if action == 'end' or is_timed_out or is_finished:
+        if index >= len(qs):
             return _finish_test_session(request, start_ts, qs)
 
         return redirect('quiz:test_session')

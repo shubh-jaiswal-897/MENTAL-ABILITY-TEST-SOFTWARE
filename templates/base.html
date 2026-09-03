@@ -67,6 +67,39 @@
         </ul>
 
         <div class="d-flex align-items-center gap-3 flex-wrap">
+          <!-- Dynamic Language Selector Dropdown -->
+          <select id="languageSelect" class="theme-selector" title="Select UI Language" onchange="switchLanguage(this.value)">
+            <option value="en">🌐 English</option>
+            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+            <option value="gu">🇮🇳 ગુજરાતી (Gujarati)</option>
+            <option value="mr">🇮🇳 मराठी (Marathi)</option>
+            <option value="bn">🇮🇳 বাংলা (Bengali)</option>
+            <option value="ta">🇮🇳 தமிழ் (Tamil)</option>
+            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+            <option value="kn">🇮🇳 ಕನ್ನಡ (Kannada)</option>
+            <option value="ml">🇮🇳 മലയാളം (Malayalam)</option>
+            <option value="pa">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
+            <option value="ur">🇵🇰 اردو (Urdu)</option>
+            <option value="es">🇪🇸 Español (Spanish)</option>
+            <option value="fr">🇫🇷 Français (French)</option>
+            <option value="de">🇩🇪 Deutsch (German)</option>
+            <option value="it">🇮🇹 Italiano (Italian)</option>
+            <option value="pt">🇵🇹 Português (Portuguese)</option>
+            <option value="ru">🇷🇺 Русский (Russian)</option>
+            <option value="zh-CN">🇨🇳 中文 (Chinese Simplified)</option>
+            <option value="zh-TW">🇨🇳 中文 (Chinese Traditional)</option>
+            <option value="ja">🇯🇵 日本語 (Japanese)</option>
+            <option value="ko">🇰🇷 한국어 (Korean)</option>
+            <option value="ar">🇦🇪 العربية (Arabic)</option>
+            <option value="tr">🇹🇷 Türkçe (Turkish)</option>
+            <option value="vi">🇻🇳 Tiếng Việt (Vietnamese)</option>
+            <option value="id">🇮🇩 Bahasa Indonesia (Indonesian)</option>
+            <option value="nl">🇳🇱 Nederlands (Dutch)</option>
+            <option value="pl">🇵🇱 Polski (Polish)</option>
+            <option value="el">🇬🇷 Ελληνικά (Greek)</option>
+            <option value="th">🇹🇭 ไทย (Thai)</option>
+          </select>
+
           <!-- Dynamic Theme Selector Dropdown -->
           <select id="themeSelect" class="theme-selector" title="Switch UI Theme" onchange="switchTheme(this.value)">
             <option value="clean-light">☀️ Clean Light</option>
@@ -130,6 +163,8 @@
     </div>
   </footer>
 
+  <div id="google_translate_element" style="display:none;"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
       function switchTheme(themeName) {
@@ -151,7 +186,56 @@
           if (sel) sel.value = saved;
         });
       })();
+
+      // Google Translate Element & Custom Selector Logic
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,hi,gu,mr,bn,ta,te,kn,ml,pa,ur,es,fr,de,it,pt,ru,zh-CN,zh-TW,ja,ko,ar,tr,vi,id,nl,pl,el,th',
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+
+      function switchLanguage(langCode) {
+        try {
+          localStorage.setItem('selectedLanguage', langCode);
+        } catch(e) {}
+
+        var host = window.location.hostname;
+        document.cookie = "googtrans=/en/" + langCode + "; path=/; domain=" + host;
+        document.cookie = "googtrans=/en/" + langCode + "; path=/";
+
+        var combo = document.querySelector('.goog-te-combo');
+        if (combo) {
+          combo.value = langCode;
+          combo.dispatchEvent(new Event('change'));
+        } else {
+          window.location.reload();
+        }
+      }
+
+      (function() {
+        var savedLang = 'en';
+        try {
+          savedLang = localStorage.getItem('selectedLanguage') || 'en';
+        } catch(e) {}
+
+        if (savedLang !== 'en') {
+          var host = window.location.hostname;
+          document.cookie = "googtrans=/en/" + savedLang + "; path=/; domain=" + host;
+          document.cookie = "googtrans=/en/" + savedLang + "; path=/";
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+          var sel = document.getElementById('languageSelect');
+          if (sel) {
+            sel.value = savedLang;
+          }
+        });
+      })();
     </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
   <!-- Floating AI Chatbot Widget -->
   {% include 'quiz/ai_chatbot.html' %}
   {% block extra_js %}{% endblock %}

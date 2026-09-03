@@ -42,30 +42,24 @@ class QuestionAdmin(admin.ModelAdmin):
     def ai_generate_view(self, request):
         from django.shortcuts import render, redirect
         from django.contrib import messages
-        from django.contrib import messages
-        from .ai_generator import generate_ai_questions, fetch_internet_questions
+        from .ai_generator import fetch_internet_questions
 
         if request.method == 'POST':
             subject_id = request.POST.get('subject')
             difficulty = request.POST.get('difficulty')
-            source = request.POST.get('source', 'internet')
             try:
                 count = int(request.POST.get('count', 5))
             except Exception:
                 count = 5
 
-            if source == 'internet':
-                created = fetch_internet_questions(subject_id=subject_id, difficulty=difficulty, count=count)
-                messages.success(request, f"🌐 Success! Fetched and imported {len(created)} real questions over the internet!")
-            else:
-                created = generate_ai_questions(subject_id=subject_id, difficulty=difficulty, count=count)
-                messages.success(request, f"🤖 Success! Generated {len(created)} new AI reasoning questions into the database!")
+            created = fetch_internet_questions(subject_id=subject_id, difficulty=difficulty, count=count)
+            messages.success(request, f"🌐 Success! Fetched and imported {len(created)} real questions over the internet!")
 
             return redirect('admin:quiz_question_changelist')
 
         context = {
             **self.admin_site.each_context(request),
-            'title': 'AI & Web Question Generator 🤖🌐',
+            'title': 'AI & Web Question Fetcher 🌐',
             'subjects': Subject.objects.all(),
             'opts': self.model._meta,
         }
