@@ -155,7 +155,7 @@
             {% endif %}
 
             <div class="mt-3 text-end">
-              <button class="btn btn-lc-secondary btn-sm" type="button" onclick="openAiChatWithPrompt('Explain question #{{ item.num }}: {{ item.text|escapejs }} \nCorrect Answer: {{ item.correct_choice|escapejs }}')">
+              <button class="btn btn-lc-secondary btn-sm" type="button" onclick="openAiChatWithPrompt('{{ item.text|escapejs }}')">
                 <i class="fas fa-brain me-1" style="color: var(--lc-amber);"></i> Ask Brain AI for details
               </button>
             </div>

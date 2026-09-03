@@ -81,7 +81,7 @@
 
         <!-- Action Bar -->
         <div class="mt-4 pt-3 border-top border-secondary d-flex flex-wrap gap-2 align-items-center">
-          <button class="btn btn-lc-secondary btn-sm text-amber" type="button" onclick="openAiChatWithPrompt('Explain this {{ question.subject.name|default:"mental ability" }} question step-by-step: {{ question.text|escapejs }}')">
+          <button class="btn btn-lc-secondary btn-sm text-amber" type="button" onclick="openAiChatWithPrompt('{{ question.text|escapejs }}')">
             <i class="fas fa-robot me-1"></i> Ask BrainBot AI
           </button>
         </div>
