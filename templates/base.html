@@ -131,21 +131,30 @@
               <i class="fas fa-crown me-1"></i> {{ profile.rank_title|default:"Novice" }}
             </span>
 
-            <form action="{% url 'logout' %}" method="post" class="d-inline">
-              {% csrf_token %}
-              <button class="btn btn-lc-secondary btn-sm rounded-pill px-3" type="submit" title="Logout">
-                <i class="fas fa-sign-out-alt me-1"></i> Exit
-              </button>
-            </form>
+            <div class="d-flex align-items-center gap-2 flex-nowrap">
+              <form action="{% url 'logout' %}" method="post" class="d-inline mb-0">
+                {% csrf_token %}
+                <button class="btn btn-lc-secondary btn-sm rounded-pill px-3 text-nowrap" type="submit" title="Logout">
+                  <i class="fas fa-sign-out-alt me-1"></i> Exit
+                </button>
+              </form>
+              
+              <!-- Voice / Read Page Aloud Button -->
+              <a id="ttsButton" href="javascript:void(0);" onclick="toggleTTS()" title="Read Page Aloud" class="text-decoration-none d-flex align-items-center justify-content-center flex-shrink-0" style="color: var(--lc-text); width: 32px; height: 32px; font-size: 1.1rem; border-radius: 50%; transition: background-color 0.2s;">
+                <i class="fas fa-volume-up"></i>
+              </a>
+            </div>
           {% else %}
-            <a class="btn btn-lc-secondary btn-sm rounded-pill px-3" href="{% url 'login' %}">Log In</a>
-            <a class="btn btn-lc-primary btn-sm rounded-pill px-3" href="{% url 'quiz:signup' %}">Sign Up</a>
+            <div class="d-flex align-items-center gap-2 flex-nowrap">
+              <a class="btn btn-lc-secondary btn-sm rounded-pill px-3 text-nowrap" href="{% url 'login' %}">Log In</a>
+              <a class="btn btn-lc-primary btn-sm rounded-pill px-3 text-nowrap" href="{% url 'quiz:signup' %}">Sign Up</a>
+              
+              <!-- Voice / Read Page Aloud Button -->
+              <a id="ttsButton" href="javascript:void(0);" onclick="toggleTTS()" title="Read Page Aloud" class="text-decoration-none d-flex align-items-center justify-content-center flex-shrink-0" style="color: var(--lc-text); width: 32px; height: 32px; font-size: 1.1rem; border-radius: 50%; transition: background-color 0.2s;">
+                <i class="fas fa-volume-up"></i>
+              </a>
+            </div>
           {% endif %}
-
-          <!-- Voice / Read Page Aloud Button -->
-          <a id="ttsButton" href="javascript:void(0);" onclick="toggleTTS()" title="Read Page Aloud" class="text-decoration-none d-flex align-items-center justify-content-center" style="color: var(--lc-text); width: 32px; height: 32px; font-size: 1.1rem; border-radius: 50%; transition: background-color 0.2s;">
-            <i class="fas fa-volume-up"></i>
-          </a>
         </div>
       </div>
     </div>
