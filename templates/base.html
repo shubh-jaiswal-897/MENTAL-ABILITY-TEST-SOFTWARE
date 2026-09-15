@@ -131,7 +131,7 @@
               <i class="fas fa-crown me-1"></i> {{ profile.rank_title|default:"Novice" }}
             </span>
 
-            <div class="d-flex align-items-center gap-2 flex-nowrap">
+            <div class="d-flex align-items-center gap-3 flex-nowrap">
               <form action="{% url 'logout' %}" method="post" class="d-inline mb-0">
                 {% csrf_token %}
                 <button class="btn btn-lc-secondary btn-sm rounded-pill px-3 text-nowrap" type="submit" title="Logout">
@@ -145,7 +145,7 @@
               </a>
             </div>
           {% else %}
-            <div class="d-flex align-items-center gap-2 flex-nowrap">
+            <div class="d-flex align-items-center gap-3 flex-nowrap">
               <a class="btn btn-lc-secondary btn-sm rounded-pill px-3 text-nowrap" href="{% url 'login' %}">Log In</a>
               <a class="btn btn-lc-primary btn-sm rounded-pill px-3 text-nowrap" href="{% url 'quiz:signup' %}">Sign Up</a>
               
