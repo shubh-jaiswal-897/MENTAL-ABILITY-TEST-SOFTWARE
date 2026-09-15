@@ -672,12 +672,14 @@ def get_presigned_url(request):
         return JsonResponse({'error': 'Cloud storage credentials (AWS_*) not configured in Vercel.'}, status=500)
         
     try:
+        from botocore.config import Config
         s3_client = boto3.client(
             's3',
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             endpoint_url=s3_endpoint,
-            region_name='us-east-1' # Default for Supabase
+            region_name='us-east-1', # Default for Supabase
+            config=Config(signature_version='s3v4')
         )
         
         # Make a unique filename to prevent overwrites

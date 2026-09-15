@@ -75,7 +75,11 @@
               body: file
             });
             
-            if (!putRes.ok) throw new Error("Cloud upload failed.");
+            if (!putRes.ok) {
+              const errorText = await putRes.text();
+              console.error("S3 Upload Error:", errorText);
+              throw new Error(`Cloud upload failed: ${putRes.status} ${putRes.statusText}. Check console for details.`);
+            }
             
             // 3. Submit form to Django with the final file URL
             fileUrlInput.value = urlData.file_url;
