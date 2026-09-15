@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Generated Exam - iGOT{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-4">
+  <div class="col-lg-8">
+    <div class="lc-card p-4 shadow-sm" style="background-color: var(--lc-surface);">
+      <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+          <h4 class="fw-bold mb-1" style="color: var(--lc-text);">{{ exam.material.title }} - Practice</h4>
+          <span class="badge bg-primary font-monospace">{{ exam.total }} Questions</span>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small mb-1">
+            <i class="fas fa-brain" style="color: var(--lc-amber);"></i> AI Generated
+          </div>
+          <div class="text-danger fw-bold" style="font-size: 1.1rem;">
+            <i class="fas fa-clock"></i> <span id="timer">--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <form id="examForm" method="post" action="{% url 'quiz:submit_ai_exam' exam.id %}">
+        {% csrf_token %}
+        
+        {% for q in questions %}
+          <div class="mb-5">
+            <h6 class="fw-bold mb-3" style="color: var(--lc-text);">
+              <span class="text-muted me-2">{{ forloop.counter }}.</span> {{ q.question_text }}
+            </h6>
+            
+            <div class="list-group list-group-flush gap-2">
+              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="A" required>
+                A. {{ q.choice_a }}
+              </label>
+              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="B" required>
+                B. {{ q.choice_b }}
+              </label>
+              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="C" required>
+                C. {{ q.choice_c }}
+              </label>
+              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="D" required>
+                D. {{ q.choice_d }}
+              </label>
+            </div>
+          </div>
+        {% endfor %}
+
+        <div class="d-grid mt-4 pt-3 border-top">
+          <button type="submit" class="btn btn-lc-primary fw-bold py-2">
+            <i class="fas fa-check-circle me-2"></i> Submit Exam
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 20 seconds per question
+    const totalQuestions = parseInt("{{ exam.total|default:'0' }}") || parseInt("{{ questions|length }}");
+    let timeLeft = totalQuestions * 20;
+    const timerDisplay = document.getElementById("timer");
+    const examForm = document.getElementById("examForm");
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      // Make it flash when less than 10 seconds remaining if animate.css is available
+      if (timeLeft <= 10) {
+        timerDisplay.style.animation = "flash 1s infinite";
+      }
+    }
+
+    const timerInterval = setInterval(function() {
+      timeLeft--;
+      
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timerDisplay.textContent = "00:00";
+        examForm.submit();
+      } else {
+        updateTimerDisplay();
+      }
+    }, 1000);
+
+    // Initial display
+    updateTimerDisplay();
+  });
+</script>
+{% endblock %}

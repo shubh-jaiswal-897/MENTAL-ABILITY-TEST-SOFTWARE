@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Exam Result - iGOT{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-4">
+  <div class="col-lg-8">
+    <div class="lc-card p-4 shadow-sm text-center" style="background-color: var(--lc-surface);">
+      <h3 class="fw-bold mb-2" style="color: var(--lc-text);">Practice Complete!</h3>
+      <p class="text-muted mb-4">Based on your uploaded study material: <strong>{{ exam.material.title }}</strong></p>
+      
+      <div class="display-1 fw-bold mb-3" style="color: var(--lc-amber);">
+        {{ exam.score }} <span class="fs-4 text-muted">/ {{ exam.total }}</span>
+      </div>
+      
+      <p class="mb-4" style="color: var(--lc-text);">
+        {% if exam.score == exam.total %}
+          <span class="badge bg-success fs-6"><i class="fas fa-star text-warning"></i> Perfect Score!</span>
+        {% elif exam.score > 0 %}
+          Great effort! Keep practicing.
+        {% else %}
+          Time to review the material again.
+        {% endif %}
+      </p>
+
+      <div class="text-start mt-4 pt-4 border-top">
+        <h5 class="fw-bold mb-4" style="color: var(--lc-text);">Answer Review:</h5>
+        {% for q in exam.questions.all %}
+          <div class="mb-4 p-3 rounded border" style="background-color: {% if q.is_correct %}rgba(25, 135, 84, 0.1){% else %}rgba(220, 53, 69, 0.1){% endif %}; border-color: {% if q.is_correct %}var(--lc-easy){% else %}var(--lc-hard){% endif %} !important;">
+            <p class="fw-bold mb-2" style="color: var(--lc-text);">{{ forloop.counter }}. {{ q.question_text }}</p>
+            
+            <ul class="list-unstyled small mb-2 text-muted">
+              <li>A. {{ q.choice_a }}</li>
+              <li>B. {{ q.choice_b }}</li>
+              <li>C. {{ q.choice_c }}</li>
+              <li>D. {{ q.choice_d }}</li>
+            </ul>
+
+            <div class="d-flex justify-content-between font-monospace small fw-bold">
+              <span style="color: {% if q.is_correct %}var(--lc-easy){% else %}var(--lc-hard){% endif %};">
+                Your Answer: {{ q.user_answer|default:"None" }}
+              </span>
+              {% if not q.is_correct %}
+                <span class="text-success">Correct Answer: {{ q.correct_choice }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid mt-4">
+        <a href="{% url 'quiz:study_material' %}" class="btn btn-outline-primary fw-bold">
+          <i class="fas fa-arrow-left me-2"></i> Back to Study Materials
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -112,3 +112,7 @@ LOGIN_URL = '/accounts/login/'
 CSRF_TRUSTED_ORIGINS = [
     "https://*.vercel.app",
 ]
+
+MEDIA_URL = '/media/'
+import os
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

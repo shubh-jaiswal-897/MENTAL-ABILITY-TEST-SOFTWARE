@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Question, Choice, ContactSubmission, TestAttempt, Subject, UserProfile, Contest, GoodieItem, UserGoodieRedemption
+from .models import Question, Choice, ContactSubmission, TestAttempt, Subject, UserProfile, Contest, GoodieItem, UserGoodieRedemption, StudyMaterial, Exam, ExamQuestion
 from .forms import ContactForm
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
@@ -459,13 +459,14 @@ def dashboard(request):
     recommendations = []
     scores_over_time = []
 
+    subject_scores = {}
+
     if total_attempts > 0:
         perc_list = [(attempt.score / attempt.total * 100) for attempt in attempts if attempt.total > 0]
         avg_score = round(sum(perc_list) / len(perc_list), 2) if perc_list else 0
 
         subject_name_map = {str(sub.id): sub.name for sub in Subject.objects.all()}
 
-        subject_scores = {}
         for attempt in attempts:
             subjects_list = [s.strip() for s in attempt.subjects.split(',') if s.strip()] if attempt.subjects else []
             score_perc = (attempt.score / attempt.total * 100) if attempt.total > 0 else 0
@@ -477,16 +478,54 @@ def dashboard(request):
                 else:
                     subject_scores[subject_name] = {'count': 1, 'total_score': score_perc}
 
-        subject_avg = {sub: round(data['total_score'] / data['count'], 2) for sub, data in subject_scores.items()}
-        recommendations = [sub for sub, avg in subject_avg.items() if avg < 60]
+    # Calculate AI Exam Stats
+    from .models import Exam
+    ai_exams = Exam.objects.filter(user=request.user, completed_at__isnull=False)
+    ai_total_attempts = ai_exams.count()
+    ai_avg_score = 0
+    if ai_total_attempts > 0:
+        ai_perc_list = [(exam.score / exam.total * 100) for exam in ai_exams if exam.total > 0]
+        ai_avg_score = round(sum(ai_perc_list) / len(ai_perc_list), 2) if ai_perc_list else 0
+        
+        # Add AI Exams to subject accuracy
+        for exam in ai_exams:
+            subject_name = f"{exam.material.title} (AI)"
+            score_perc = (exam.score / exam.total * 100) if exam.total > 0 else 0
+            if subject_name in subject_scores:
+                subject_scores[subject_name]['count'] += 1
+                subject_scores[subject_name]['total_score'] += score_perc
+            else:
+                subject_scores[subject_name] = {'count': 1, 'total_score': score_perc}
 
-        scores_over_time = [
-            {
-                'date': attempt.started_at.strftime('%Y-%m-%d'),
-                'score': round((attempt.score / attempt.total * 100), 1) if attempt.total > 0 else 0
-            }
-            for attempt in attempts[:10]
-        ]
+    # Calculate final averages and recommendations
+    subject_avg = {sub: round(data['total_score'] / data['count'], 2) for sub, data in subject_scores.items()}
+    recommendations = [sub for sub, avg in subject_avg.items() if avg < 60]
+
+    # Combine TestAttempts and AI Exams for the chart
+    combined_scores = []
+    for attempt in attempts:
+        combined_scores.append({
+            'date': attempt.started_at,
+            'label': attempt.started_at.strftime('%Y-%m-%d (Arena)'),
+            'score': round((attempt.score / attempt.total * 100), 1) if attempt.total > 0 else 0
+        })
+    for exam in ai_exams:
+        combined_scores.append({
+            'date': exam.completed_at,
+            'label': exam.completed_at.strftime('%Y-%m-%d (AI Exam)'),
+            'score': round((exam.score / exam.total * 100), 1) if exam.total > 0 else 0
+        })
+        
+    # Sort by date descending and take last 10, then reverse for chronological graph
+    combined_scores.sort(key=lambda x: x['date'], reverse=True)
+    combined_scores = combined_scores[:10]
+    
+    scores_over_time = []
+    for item in combined_scores:
+        scores_over_time.append({
+            'date': item['label'],
+            'score': item['score']
+        })
 
     # Generate LeetCode-Style Heatmap activity data for past 60 days
     today = timezone.now().date()
@@ -515,6 +554,15 @@ def dashboard(request):
         attempt_copy.subject_names = ', '.join(subject_names)
         recent_attempts.append(attempt_copy)
 
+    # Calculate AI Exam Stats
+    from .models import Exam
+    ai_exams = Exam.objects.filter(user=request.user, completed_at__isnull=False)
+    ai_total_attempts = ai_exams.count()
+    ai_avg_score = 0
+    if ai_total_attempts > 0:
+        ai_perc_list = [(exam.score / exam.total * 100) for exam in ai_exams if exam.total > 0]
+        ai_avg_score = round(sum(ai_perc_list) / len(ai_perc_list), 2) if ai_perc_list else 0
+
     context = {
         'profile': profile,
         'total_attempts': total_attempts,
@@ -524,6 +572,8 @@ def dashboard(request):
         'scores_over_time': json.dumps(scores_over_time),
         'attempts': recent_attempts,
         'heatmap_data': json.dumps(heatmap_data),
+        'ai_total_attempts': ai_total_attempts,
+        'ai_avg_score': ai_avg_score,
     }
     return render(request, 'dashboard.html', context)
 
@@ -570,6 +620,8 @@ def join_contest(request, pk):
     return redirect('quiz:test_session')
 
 
+from .services import extract_text_from_file, generate_mcqs_from_text
+
 def goodies(request):
     """Goodies Rewards Store where users redeem XP / Goodies Coins for physical rewards."""
     profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
@@ -586,6 +638,119 @@ def goodies(request):
         'user_redemptions': user_redemptions,
     }
     return render(request, 'quiz/goodies.html', context)
+
+@login_required
+def study_material(request):
+    """Study Material page where users upload and manage documents."""
+    materials = StudyMaterial.objects.filter(user=request.user).order_by('-uploaded_at')
+    context = {'materials': materials}
+    return render(request, 'quiz/study_material.html', context)
+
+@login_required
+def upload_study_material(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        file = request.FILES.get('file')
+        if title and file:
+            StudyMaterial.objects.create(user=request.user, title=title, file=file)
+            messages.success(request, "Study material uploaded successfully!")
+        else:
+            messages.error(request, "Please provide a title and file.")
+    return redirect('quiz:study_material')
+
+@login_required
+def delete_study_material(request, material_id):
+    if request.method == 'POST':
+        material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
+        # The file will be automatically deleted if we use a signals receiver,
+        # but for simplicity we delete the object which removes it from DB.
+        # To delete the actual file:
+        if material.file:
+            material.file.delete(save=False)
+        material.delete()
+        messages.success(request, "Study material deleted successfully.")
+    return redirect('quiz:study_material')
+
+@login_required
+def start_ai_exam(request, material_id):
+    material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
+    
+    # Get num_questions from GET parameters, default to 5, max 20
+    try:
+        num_questions = int(request.GET.get('num_questions', 5))
+        if num_questions > 20:
+            num_questions = 20
+        elif num_questions < 1:
+            num_questions = 1
+    except ValueError:
+        num_questions = 5
+    
+    # Extract text and generate MCQs
+    text = extract_text_from_file(material.file.path)
+    if not text:
+        messages.error(request, "Could not extract text from the file.")
+        return redirect('quiz:study_material')
+        
+    mcqs, error_msg = generate_mcqs_from_text(text, material.title, num_questions=num_questions)
+    if not mcqs:
+        messages.error(request, f"Failed to generate questions: {error_msg}")
+        return redirect('quiz:study_material')
+        
+    # Create Exam
+    exam = Exam.objects.create(material=material, user=request.user, total=len(mcqs))
+    
+    for q in mcqs:
+        ExamQuestion.objects.create(
+            exam=exam,
+            question_text=q.get('question_text', ''),
+            choice_a=q.get('choice_a', ''),
+            choice_b=q.get('choice_b', ''),
+            choice_c=q.get('choice_c', ''),
+            choice_d=q.get('choice_d', ''),
+            correct_choice=q.get('correct_choice', 'A')
+        )
+        
+    return redirect('quiz:take_ai_exam', exam_id=exam.id)
+
+@login_required
+def take_ai_exam(request, exam_id):
+    exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+    if exam.completed_at:
+        messages.info(request, "You have already completed this exam.")
+        return redirect('quiz:study_material')
+        
+    questions = exam.questions.all()
+    return render(request, 'quiz/take_ai_exam.html', {'exam': exam, 'questions': questions})
+
+@login_required
+def submit_ai_exam(request, exam_id):
+    if request.method != 'POST':
+        return redirect('quiz:study_material')
+        
+    exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+    if exam.completed_at:
+        return redirect('quiz:study_material')
+        
+    score = 0
+    for q in exam.questions.all():
+        ans = request.POST.get(f'question_{q.id}')
+        if ans:
+            q.user_answer = ans
+            q.save()
+            if ans == q.correct_choice:
+                score += 1
+                
+    exam.score = score
+    exam.completed_at = timezone.now()
+    exam.save()
+    
+    # Award XP for AI practice (e.g., 10 XP per correct)
+    if hasattr(request.user, 'profile'):
+        request.user.profile.total_xp += (score * 10)
+        request.user.profile.save()
+        
+    messages.success(request, f"Exam completed! You scored {score} / {exam.total}.")
+    return render(request, 'quiz/ai_exam_result.html', {'exam': exam})
 
 
 @login_required
