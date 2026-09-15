@@ -3,3 +3,7 @@ whitenoise>=6.0
 gunicorn>=20.1
 dj-database-url>=2.1.0
 psycopg2-binary>=2.9.9
+openai>=1.0.0
+pypdf>=3.0.0
+python-docx>=0.8.11
+requests>=2.31.0
