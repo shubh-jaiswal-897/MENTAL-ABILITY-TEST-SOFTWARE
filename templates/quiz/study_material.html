@@ -100,7 +100,12 @@
   <div class="col-lg-8">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-file-alt me-2" style="color: var(--lc-blue);"></i> My Study Materials</h5>
-      <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">{{ materials|length }} Files</span>
+      <div>
+        <span class="badge text-dark font-monospace fw-bold me-2" style="background-color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">
+          <i class="fas fa-coins me-1"></i> {{ profile.total_xp }} XP
+        </span>
+        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">{{ materials|length }} Files</span>
+      </div>
     </div>
 
     <div class="row g-3">
@@ -111,7 +116,7 @@
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <h6 class="fw-bold mb-1 text-truncate" style="color: var(--lc-text); max-width: 80%;">{{ material.title }}</h6>
                 <div class="d-flex gap-2">
-                  <span class="badge bg-secondary font-monospace px-1 py-1" style="font-size: 0.65rem; line-height: 1;">{{ material.file.name|slice:"-4:"|upper }}</span>
+                  <span class="badge bg-secondary font-monospace px-1 py-1" style="font-size: 0.65rem; line-height: 1;">FILE</span>
                   <form method="post" action="{% url 'quiz:delete_study_material' material.id %}" onsubmit="return confirm('Are you sure you want to delete this material?');" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm text-danger p-0 border-0 bg-transparent" title="Delete">

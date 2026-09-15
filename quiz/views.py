@@ -643,7 +643,8 @@ def goodies(request):
 def study_material(request):
     """Study Material page where users upload and manage documents."""
     materials = StudyMaterial.objects.filter(user=request.user).order_by('-uploaded_at')
-    context = {'materials': materials}
+    profile = get_or_create_user_profile(request.user)
+    context = {'materials': materials, 'profile': profile}
     return render(request, 'quiz/study_material.html', context)
 
 import boto3
@@ -721,7 +722,12 @@ def upload_study_material(request):
         
         if title and file_url:
             StudyMaterial.objects.create(user=request.user, title=title, file_url=file_url)
-            messages.success(request, "Study material linked successfully!")
+            
+            if hasattr(request.user, 'profile'):
+                request.user.profile.total_xp += 5
+                request.user.profile.save()
+                
+            messages.success(request, "Study material linked successfully! You earned +5 XP.")
         else:
             messages.error(request, "Please provide a title and upload a file.")
     return redirect('quiz:study_material')
