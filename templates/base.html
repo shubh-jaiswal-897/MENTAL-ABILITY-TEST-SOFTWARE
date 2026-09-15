@@ -114,9 +114,9 @@
           </select>
 
           <!-- Voice / Read Page Aloud Button -->
-          <button id="ttsButton" class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-2" onclick="toggleTTS()" title="Read Page Aloud" style="border-color: var(--lc-border-highlight); color: var(--lc-text);">
+          <a id="ttsButton" href="javascript:void(0);" onclick="toggleTTS()" title="Read Page Aloud" class="text-decoration-none me-2 d-flex align-items-center justify-content-center" style="color: var(--lc-text); width: 32px; height: 32px; font-size: 1.1rem; border-radius: 50%; transition: background-color 0.2s;">
             <i class="fas fa-volume-up"></i>
-          </button>
+          </a>
 
           {% if user.is_authenticated %}
             <!-- Streak Flame Badge -->
