@@ -649,6 +649,7 @@ def study_material(request):
 import boto3
 from django.http import JsonResponse
 import uuid
+import os
 
 @login_required
 def get_presigned_url(request):
