@@ -58,9 +58,11 @@
             
             // 1. Get Presigned URL
             const urlRes = await fetch(`/study-material/presigned-url/?file_name=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}`);
-            if (!urlRes.ok) throw new Error("Failed to get secure upload link. Make sure Cloud Storage keys are set.");
+            const urlData = await urlRes.json().catch(() => ({}));
             
-            const urlData = await urlRes.json();
+            if (!urlRes.ok) {
+              throw new Error(urlData.error || "Failed to get secure upload link from server. Check logs.");
+            }
             if (urlData.error) throw new Error(urlData.error);
             
             // 2. Upload file directly to Cloud Storage
