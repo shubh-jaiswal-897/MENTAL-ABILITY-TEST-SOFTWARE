@@ -22,22 +22,71 @@
   <div class="col-lg-4">
     <div class="lc-card p-4 shadow-sm" style="background-color: var(--lc-surface);">
       <h5 class="fw-bold mb-3" style="color: var(--lc-text);"><i class="fas fa-cloud-upload-alt me-2" style="color: var(--lc-amber);"></i> Upload Material</h5>
-      <form method="post" action="{% url 'quiz:upload_study_material' %}" enctype="multipart/form-data">
+      <form id="uploadForm" method="post" action="{% url 'quiz:upload_study_material' %}">
         {% csrf_token %}
+        <input type="hidden" id="file_url" name="file_url">
         <div class="mb-3">
           <label for="materialTitle" class="form-label" style="color: var(--lc-text);">Document Title</label>
           <input type="text" class="form-control" id="materialTitle" name="title" required>
         </div>
         <div class="mb-3">
           <label for="materialFile" class="form-label" style="color: var(--lc-text);">File (PDF, DOCX, TXT)</label>
-          <input type="file" class="form-control" id="materialFile" name="file" accept=".pdf,.docx,.txt" required>
+          <input type="file" class="form-control" id="materialFile" accept=".pdf,.docx,.txt" required>
+          <small id="uploadStatus" class="form-text text-muted"></small>
         </div>
         <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-lc-primary fw-bold">
+          <button type="submit" id="uploadBtn" class="btn btn-lc-primary fw-bold">
             <i class="fas fa-upload me-2"></i> Upload & Save
           </button>
         </div>
       </form>
+      
+      <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const fileInput = document.getElementById('materialFile');
+          const file = fileInput.files[0];
+          const uploadBtn = document.getElementById('uploadBtn');
+          const statusText = document.getElementById('uploadStatus');
+          const fileUrlInput = document.getElementById('file_url');
+          
+          if (!file) return;
+          
+          try {
+            uploadBtn.disabled = true;
+            statusText.innerHTML = '<span class="text-warning"><i class="fas fa-spinner fa-spin"></i> Initializing secure upload...</span>';
+            
+            // 1. Get Presigned URL
+            const urlRes = await fetch(`/study-material/presigned-url/?file_name=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}`);
+            if (!urlRes.ok) throw new Error("Failed to get secure upload link. Make sure Cloud Storage keys are set.");
+            
+            const urlData = await urlRes.json();
+            if (urlData.error) throw new Error(urlData.error);
+            
+            // 2. Upload file directly to Cloud Storage
+            statusText.innerHTML = '<span class="text-primary"><i class="fas fa-spinner fa-spin"></i> Uploading directly to cloud (bypassing limits)...</span>';
+            const putRes = await fetch(urlData.presigned_url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': file.type || 'application/octet-stream'
+              },
+              body: file
+            });
+            
+            if (!putRes.ok) throw new Error("Cloud upload failed.");
+            
+            // 3. Submit form to Django with the final file URL
+            fileUrlInput.value = urlData.file_url;
+            statusText.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Upload successful! Saving...</span>';
+            this.submit();
+            
+          } catch (err) {
+            console.error(err);
+            statusText.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${err.message}</span>`;
+            uploadBtn.disabled = false;
+          }
+        });
+      </script>
     </div>
   </div>
 
@@ -77,7 +126,7 @@
                   <i class="fas fa-magic me-1"></i> Generate AI Exam
                 </button>
               </form>
-              <a href="{{ material.file.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+              <a href="{{ material.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-external-link-alt me-1"></i> View File
               </a>
             </div>

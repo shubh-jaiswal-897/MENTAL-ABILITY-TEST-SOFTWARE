@@ -646,16 +646,81 @@ def study_material(request):
     context = {'materials': materials}
     return render(request, 'quiz/study_material.html', context)
 
+import boto3
+from django.http import JsonResponse
+import uuid
+
+@login_required
+def get_presigned_url(request):
+    """Generate a presigned S3/Supabase URL for direct-to-cloud upload."""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Invalid method'}, status=405)
+        
+    file_name = request.GET.get('file_name')
+    content_type = request.GET.get('content_type')
+    
+    if not file_name or not content_type:
+        return JsonResponse({'error': 'Missing file_name or content_type'}, status=400)
+        
+    s3_endpoint = os.environ.get('AWS_S3_ENDPOINT_URL')
+    access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+    secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    bucket_name = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'study-materials')
+    
+    if not all([s3_endpoint, access_key, secret_key]):
+        return JsonResponse({'error': 'Cloud storage credentials (AWS_*) not configured in Vercel.'}, status=500)
+        
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            endpoint_url=s3_endpoint,
+            region_name='us-east-1' # Default for Supabase
+        )
+        
+        # Make a unique filename to prevent overwrites
+        unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_{file_name}"
+        
+        presigned_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': unique_filename,
+                'ContentType': content_type
+            },
+            ExpiresIn=3600
+        )
+        
+        # The final URL where the file will be accessible
+        # If Supabase, the public URL looks like: endpoint/storage/v1/object/public/bucket/filename
+        # But wait, if it's S3, we can just save the bucket and key, or the full URL.
+        # It's easier to just assume the standard S3 URL if Supabase:
+        if "supabase.co" in s3_endpoint:
+            base = s3_endpoint.split('/s3')[0]
+            public_url = f"{base}/object/public/{bucket_name}/{unique_filename}"
+        else:
+            public_url = f"{s3_endpoint}/{bucket_name}/{unique_filename}"
+            
+        return JsonResponse({
+            'presigned_url': presigned_url,
+            'file_url': public_url
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 @login_required
 def upload_study_material(request):
     if request.method == 'POST':
         title = request.POST.get('title')
-        file = request.FILES.get('file')
-        if title and file:
-            StudyMaterial.objects.create(user=request.user, title=title, file=file)
-            messages.success(request, "Study material uploaded successfully!")
+        file_url = request.POST.get('file_url')
+        
+        if title and file_url:
+            StudyMaterial.objects.create(user=request.user, title=title, file_url=file_url)
+            messages.success(request, "Study material linked successfully!")
         else:
-            messages.error(request, "Please provide a title and file.")
+            messages.error(request, "Please provide a title and upload a file.")
     return redirect('quiz:study_material')
 
 @login_required
@@ -686,7 +751,7 @@ def start_ai_exam(request, material_id):
         num_questions = 5
     
     # Extract text and generate MCQs
-    text = extract_text_from_file(material.file.path)
+    text = extract_text_from_file(material.file_url)
     if not text:
         messages.error(request, "Could not extract text from the file.")
         return redirect('quiz:study_material')

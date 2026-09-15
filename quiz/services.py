@@ -17,7 +17,32 @@ def get_openai_client():
     return OpenAI(api_key=api_key)
 
 def extract_text_from_file(file_path):
-    """Extracts text from PDF, DOCX, or TXT files."""
+    """Extracts text from PDF, DOCX, or TXT files. Supports downloading URLs."""
+    import requests
+    import tempfile
+    from urllib.parse import urlparse
+
+    is_url = file_path.startswith('http://') or file_path.startswith('https://')
+    temp_file_path = None
+
+    if is_url:
+        try:
+            response = requests.get(file_path, timeout=30)
+            response.raise_for_status()
+            
+            path = urlparse(file_path).path
+            ext = os.path.splitext(path)[1].lower()
+            if not ext:
+                ext = '.txt'
+                
+            fd, temp_file_path = tempfile.mkstemp(suffix=ext)
+            with os.fdopen(fd, 'wb') as f:
+                f.write(response.content)
+            file_path = temp_file_path
+        except Exception as e:
+            print(f"Error downloading {file_path}: {e}")
+            return ""
+
     ext = os.path.splitext(file_path)[1].lower()
     text = ""
     try:
@@ -36,6 +61,10 @@ def extract_text_from_file(file_path):
                 text = f.read()
     except Exception as e:
         print(f"Error extracting text from {file_path}: {e}")
+        
+    if temp_file_path and os.path.exists(temp_file_path):
+        os.remove(temp_file_path)
+        
     return text
 
 import os
