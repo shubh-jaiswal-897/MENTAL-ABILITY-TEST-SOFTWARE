@@ -106,12 +106,17 @@
           </select>
 
           <!-- Dynamic Theme Selector Dropdown -->
-          <select id="themeSelect" class="theme-selector" title="Switch UI Theme" onchange="switchTheme(this.value)">
+          <select id="themeSelect" class="theme-selector me-2" title="Switch UI Theme" onchange="switchTheme(this.value)">
             <option value="clean-light">☀️ Clean Light</option>
             <option value="cyber-neon">🎨 Cyber Neon</option>
             <option value="sapphire-gold">👑 Sapphire Gold</option>
             <option value="emerald-forest">🌿 Emerald Forest</option>
           </select>
+
+          <!-- Voice / Read Page Aloud Button -->
+          <button id="ttsButton" class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-2" onclick="toggleTTS()" title="Read Page Aloud" style="border-color: var(--lc-border-highlight); color: var(--lc-text);">
+            <i class="fas fa-volume-up"></i>
+          </button>
 
           {% if user.is_authenticated %}
             <!-- Streak Flame Badge -->
@@ -239,7 +244,59 @@
         });
       })();
     </script>
-  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Text-To-Speech (TTS) Logic -->
+    <script>
+      let isSpeaking = false;
+      function toggleTTS() {
+        if (!('speechSynthesis' in window)) {
+          alert("Sorry, your browser doesn't support text to speech!");
+          return;
+        }
+        
+        const btn = document.getElementById('ttsButton');
+        
+        if (isSpeaking) {
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+          if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        } else {
+          // Read content from the main container to avoid repeating the navbar
+          const contentElement = document.querySelector('.container-fluid.py-4.px-lg-5');
+          const textToRead = contentElement ? contentElement.innerText : document.body.innerText;
+          
+          if (!textToRead.trim()) return;
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          
+          // Try to match voice to selected language
+          const langSel = document.getElementById('languageSelect');
+          if (langSel && langSel.value) {
+            utterance.lang = langSel.value;
+          }
+          
+          utterance.onend = function() {
+            isSpeaking = false;
+            if (btn) btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+          };
+          
+          // Stop any current speech before starting new
+          window.speechSynthesis.cancel();
+          
+          window.speechSynthesis.speak(utterance);
+          isSpeaking = true;
+          if (btn) btn.innerHTML = '<i class="fas fa-volume-mute" style="color: var(--lc-amber);"></i>';
+        }
+      }
+      
+      // Cancel speech when leaving the page
+      window.addEventListener('beforeunload', function() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      });
+    </script>
 
   <!-- Floating AI Chatbot Widget -->
   {% include 'quiz/ai_chatbot.html' %}
