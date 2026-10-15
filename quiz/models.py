@@ -235,6 +235,7 @@ class ExamQuestion(models.Model):
     choice_d = models.CharField(max_length=255)
     correct_choice = models.CharField(max_length=1, choices=[('A','A'),('B','B'),('C','C'),('D','D')])
     user_answer = models.CharField(max_length=1, null=True, blank=True)
+    explanation = models.TextField(blank=True, default='')
 
     def is_correct(self):
         return self.user_answer == self.correct_choice

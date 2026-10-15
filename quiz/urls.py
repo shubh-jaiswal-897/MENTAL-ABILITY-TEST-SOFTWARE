@@ -23,6 +23,7 @@ urlpatterns = [
     path('join-contest/<int:pk>/', login_required(views.join_contest), name='join_contest'),
     path('study-material/', login_required(views.study_material), name='study_material'),
     path('study-material/upload/', login_required(views.upload_study_material), name='upload_study_material'),
+    path('study-material/settings/', login_required(views.save_ai_settings), name='save_ai_settings'),
     path('study-material/presigned-url/', views.get_presigned_url, name='get_presigned_url'),
     path('study-material/delete/<int:material_id>/', login_required(views.delete_study_material), name='delete_study_material'),
     path('study-material/exam/start/<int:material_id>/', login_required(views.start_ai_exam), name='start_ai_exam'),

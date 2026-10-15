@@ -8,7 +8,7 @@
   <div class="col-lg-8">
     <div class="lc-card p-4 shadow-sm text-center" style="background-color: var(--lc-surface);">
       <h3 class="fw-bold mb-2" style="color: var(--lc-text);">Practice Complete!</h3>
-      <p class="text-muted mb-4">Based on your uploaded study material: <strong>{{ exam.material.title }}</strong></p>
+      <p class="text-muted mb-4">Topic: <strong style="color: var(--lc-text);">{{ exam.material.title }}</strong></p>
       
       <div class="display-1 fw-bold mb-3" style="color: var(--lc-amber);">
         {{ exam.score }} <span class="fs-4 text-muted">/ {{ exam.total }}</span>
@@ -45,6 +45,12 @@
                 <span class="text-success">Correct Answer: {{ q.correct_choice }}</span>
               {% endif %}
             </div>
+
+            {% if q.explanation %}
+              <div class="mt-2 pt-2 border-top border-secondary border-opacity-25 small" style="color: var(--lc-text-muted);">
+                <i class="fas fa-lightbulb text-warning me-1"></i> <strong style="color: var(--lc-text);">Explanation:</strong> {{ q.explanation }}
+              </div>
+            {% endif %}
           </div>
         {% endfor %}
       </div>

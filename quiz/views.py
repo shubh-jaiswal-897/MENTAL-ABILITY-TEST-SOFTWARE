@@ -1,4 +1,12 @@
+import os
+import re
+import uuid
+import random
+import json
+from datetime import timedelta, datetime, timezone as dt_timezone
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.conf import settings
 from .models import Question, Choice, ContactSubmission, TestAttempt, Subject, UserProfile, Contest, GoodieItem, UserGoodieRedemption, StudyMaterial, Exam, ExamQuestion
 from .forms import ContactForm
 from django.urls import reverse
@@ -7,9 +15,6 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta, datetime, timezone as dt_timezone
-import random
-import json
 from django.db.models import Avg, Count
 from django.db import transaction
 
@@ -644,17 +649,51 @@ def study_material(request):
     """Study Material page where users upload and manage documents."""
     materials = StudyMaterial.objects.filter(user=request.user).order_by('-uploaded_at')
     profile = get_or_create_user_profile(request.user)
-    context = {'materials': materials, 'profile': profile}
+    
+    current_provider = request.session.get('ai_provider', 'auto')
+    session_key = request.session.get('ai_api_key', '')
+    masked_key = f"{session_key[:4]}...{session_key[-4:]}" if len(session_key) > 8 else ("Configured" if session_key else "")
+    
+    has_env_gemini = bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY'))
+    has_env_groq = bool(os.environ.get('GROQ_API_KEY'))
+    has_env_openai = bool(os.environ.get('OPENAI_API_KEY'))
+
+    context = {
+        'materials': materials,
+        'profile': profile,
+        'current_provider': current_provider,
+        'masked_key': masked_key,
+        'has_env_gemini': has_env_gemini,
+        'has_env_groq': has_env_groq,
+        'has_env_openai': has_env_openai,
+    }
     return render(request, 'quiz/study_material.html', context)
 
-import boto3
-from django.http import JsonResponse
-import uuid
-import os
+
+@login_required
+def save_ai_settings(request):
+    """Save user AI provider and optional API key in session."""
+    if request.method == 'POST':
+        provider = request.POST.get('provider', 'auto')
+        api_key = request.POST.get('api_key', '').strip()
+        clear_key = request.POST.get('clear_key')
+
+        request.session['ai_provider'] = provider
+        if clear_key == '1':
+            request.session.pop('ai_api_key', None)
+            messages.info(request, "Custom API key cleared. Using default/system AI.")
+        elif api_key:
+            request.session['ai_api_key'] = api_key
+            messages.success(request, f"API key configured for {provider.upper()}! AI generation will use this key.")
+        else:
+            messages.info(request, f"AI generation mode set to: {provider.upper()}.")
+            
+    return redirect('quiz:study_material')
+
 
 @login_required
 def get_presigned_url(request):
-    """Generate a presigned S3/Supabase URL for direct-to-cloud upload."""
+    """Generate a presigned S3/Supabase URL for direct-to-cloud upload if configured."""
     if request.method != 'GET':
         return JsonResponse({'error': 'Invalid method'}, status=405)
         
@@ -670,7 +709,8 @@ def get_presigned_url(request):
     bucket_name = os.environ.get('AWS_STORAGE_BUCKET_NAME', 'study-materials')
     
     if not all([s3_endpoint, access_key, secret_key]):
-        return JsonResponse({'error': 'Cloud storage credentials (AWS_*) not configured in Vercel.'}, status=500)
+        # Let frontend know to use direct multipart upload
+        return JsonResponse({'error': 'Cloud storage not configured', 'use_direct_upload': True}, status=200)
         
     try:
         from botocore.config import Config
@@ -679,11 +719,10 @@ def get_presigned_url(request):
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             endpoint_url=s3_endpoint,
-            region_name='us-east-1', # Default for Supabase
+            region_name='us-east-1',
             config=Config(signature_version='s3v4')
         )
         
-        # Make a unique filename to prevent overwrites
         unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_{file_name}"
         
         presigned_url = s3_client.generate_presigned_url(
@@ -696,10 +735,6 @@ def get_presigned_url(request):
             ExpiresIn=3600
         )
         
-        # The final URL where the file will be accessible
-        # If Supabase, the public URL looks like: endpoint/storage/v1/object/public/bucket/filename
-        # But wait, if it's S3, we can just save the bucket and key, or the full URL.
-        # It's easier to just assume the standard S3 URL if Supabase:
         if "supabase.co" in s3_endpoint:
             base = s3_endpoint.split('/s3')[0]
             public_url = f"{base}/object/public/{bucket_name}/{unique_filename}"
@@ -711,45 +746,107 @@ def get_presigned_url(request):
             'file_url': public_url
         })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e), 'use_direct_upload': True}, status=500)
 
 
 @login_required
 def upload_study_material(request):
+    """
+    Handles file upload, cloud URL linking, or text note creation.
+    Saves files locally into media/study_material/ when direct file is provided.
+    """
     if request.method == 'POST':
-        title = request.POST.get('title')
-        file_url = request.POST.get('file_url')
+        title = request.POST.get('title', '').strip()
+        file_obj = request.FILES.get('file')
+        file_url = request.POST.get('file_url', '').strip()
+        notes = request.POST.get('notes', '').strip()
         
-        if title and file_url:
-            StudyMaterial.objects.create(user=request.user, title=title, file_url=file_url)
+        final_file_url = None
+        
+        # 1. Direct file upload
+        if file_obj:
+            ext = os.path.splitext(file_obj.name)[1].lower()
+            allowed = ['.pdf', '.docx', '.txt', '.md', '.doc']
+            if ext not in allowed:
+                messages.error(request, f"Unsupported file type ({ext}). Please upload a PDF, DOCX, or TXT file.")
+                return redirect('quiz:study_material')
+
+            if file_obj.size > 25 * 1024 * 1024:
+                messages.error(request, "File size exceeds 25MB limit. Please choose a smaller file.")
+                return redirect('quiz:study_material')
+
+            import uuid
+            from django.core.files.storage import default_storage
+            safe_basename = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', file_obj.name)
+            unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_{safe_basename}"
+            save_rel_path = os.path.join('study_material', unique_filename)
+            saved_name = default_storage.save(save_rel_path, file_obj)
+            final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
+
+            if not title:
+                title = os.path.splitext(file_obj.name)[0].replace('_', ' ').replace('-', ' ').title()
+
+        # 2. Pasted text notes
+        elif notes:
+            import uuid
+            from django.core.files.storage import default_storage
+            from django.core.files.base import ContentFile
+            unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_notes.txt"
+            save_rel_path = os.path.join('study_material', unique_filename)
+            saved_name = default_storage.save(save_rel_path, ContentFile(notes.encode('utf-8')))
+            final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
+
+            if not title:
+                title = f"Notes - {notes[:30]}..."
+
+        # 3. Cloud / External URL
+        elif file_url:
+            final_file_url = file_url
+            if not title:
+                title = "Study Resource"
+
+        if final_file_url and title:
+            StudyMaterial.objects.create(
+                user=request.user,
+                title=title,
+                file_url=final_file_url
+            )
             
-            if hasattr(request.user, 'profile'):
-                request.user.profile.total_xp += 5
-                request.user.profile.save()
-                
-            messages.success(request, "Study material linked successfully! You earned +5 XP.")
+            profile = get_or_create_user_profile(request.user)
+            profile.total_xp += 5
+            profile.save()
+            
+            messages.success(request, f"'{title}' uploaded successfully! You earned +5 XP.")
         else:
-            messages.error(request, "Please provide a title and upload a file.")
+            messages.error(request, "Please provide a document title and select a file or paste study notes.")
+            
     return redirect('quiz:study_material')
+
 
 @login_required
 def delete_study_material(request, material_id):
     if request.method == 'POST':
         material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
-        # The file will be automatically deleted if we use a signals receiver,
-        # but for simplicity we delete the object which removes it from DB.
-        # To delete the actual file:
-        if material.file:
-            material.file.delete(save=False)
+        # Safely delete local file if present
+        if material.file_url:
+            if material.file_url.startswith(settings.MEDIA_URL) or material.file_url.startswith('/media/'):
+                rel_path = material.file_url.replace(settings.MEDIA_URL, '').lstrip('/')
+                full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                if os.path.exists(full_path):
+                    try:
+                        os.remove(full_path)
+                    except Exception:
+                        pass
         material.delete()
         messages.success(request, "Study material deleted successfully.")
     return redirect('quiz:study_material')
+
 
 @login_required
 def start_ai_exam(request, material_id):
     material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
     
-    # Get num_questions from GET parameters, default to 5, max 20
+    # Question count (1 - 20)
     try:
         num_questions = int(request.GET.get('num_questions', 5))
         if num_questions > 20:
@@ -758,14 +855,28 @@ def start_ai_exam(request, material_id):
             num_questions = 1
     except ValueError:
         num_questions = 5
+        
+    provider = request.GET.get('provider') or request.session.get('ai_provider')
+    api_key = request.GET.get('api_key') or request.session.get('ai_api_key')
     
-    # Extract text and generate MCQs
-    text = extract_text_from_file(material.file_url)
-    if not text:
-        messages.error(request, "Could not extract text from the file.")
+    if not material.file_url:
+        messages.error(request, "This study material has no attached file. Please upload a document first.")
         return redirect('quiz:study_material')
         
-    mcqs, error_msg = generate_mcqs_from_text(text, material.title, num_questions=num_questions)
+    # Extract text
+    text = extract_text_from_file(material.file_url)
+    if not text or len(text.strip()) < 30:
+        messages.error(request, "Could not extract sufficient readable text from the file. Please ensure it contains readable text.")
+        return redirect('quiz:study_material')
+        
+    mcqs, error_msg, engine_used = generate_mcqs_from_text(
+        text=text,
+        title=material.title,
+        num_questions=num_questions,
+        api_key=api_key,
+        provider=provider
+    )
+    
     if not mcqs:
         messages.error(request, f"Failed to generate questions: {error_msg}")
         return redirect('quiz:study_material')
@@ -781,9 +892,11 @@ def start_ai_exam(request, material_id):
             choice_b=q.get('choice_b', ''),
             choice_c=q.get('choice_c', ''),
             choice_d=q.get('choice_d', ''),
-            correct_choice=q.get('correct_choice', 'A')
+            correct_choice=q.get('correct_choice', 'A'),
+            explanation=q.get('explanation', '')
         )
         
+    messages.success(request, f"Exam generated successfully ({len(mcqs)} questions)! Best of luck.")
     return redirect('quiz:take_ai_exam', exam_id=exam.id)
 
 @login_required

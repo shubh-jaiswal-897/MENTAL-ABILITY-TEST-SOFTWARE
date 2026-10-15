@@ -10,148 +10,362 @@
     <div class="lc-card p-4 position-relative overflow-hidden" style="background: var(--lc-surface); border-left: 4px solid var(--lc-easy);">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-          <span class="badge bg-success text-dark font-monospace fw-bold mb-2"><i class="fas fa-book me-1"></i> STUDY MATERIAL & AI EXAM</span>
-          <h3 class="fw-bold mb-1" style="color: var(--lc-text);">Upload & Practice</h3>
-          <p class="small mb-0" style="color: var(--lc-text-muted);">Upload your PDF, DOCX, or text files to automatically generate MCQs via AI and test your knowledge!</p>
+          <span class="badge bg-success text-dark font-monospace fw-bold mb-2">
+            <i class="fas fa-book me-1"></i> STUDY MATERIAL & AI PRACTICE
+          </span>
+          <h3 class="fw-bold mb-1" style="color: var(--lc-text);">Upload & Generate AI Exams</h3>
+          <p class="small mb-0" style="color: var(--lc-text-muted);">
+            Upload your PDF, DOCX, or text notes to automatically generate real multiple-choice questions grounded directly in your study material!
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <!-- AI Engine Settings Button -->
+          <button type="button" class="btn btn-sm btn-outline-secondary font-monospace" data-bs-toggle="modal" data-bs-target="#aiSettingsModal">
+            <i class="fas fa-cog me-1 text-warning"></i> AI Settings
+            {% if masked_key %}
+              <span class="badge bg-success ms-1">Key Set</span>
+            {% elif has_env_gemini or has_env_groq or has_env_openai %}
+              <span class="badge bg-info text-dark ms-1">Env Key</span>
+            {% else %}
+              <span class="badge bg-secondary ms-1">Built-in AI</span>
+            {% endif %}
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Upload Form Column -->
+  <!-- Upload & Add Material Card -->
   <div class="col-lg-4">
     <div class="lc-card p-4 shadow-sm" style="background-color: var(--lc-surface);">
-      <h5 class="fw-bold mb-3" style="color: var(--lc-text);"><i class="fas fa-cloud-upload-alt me-2" style="color: var(--lc-amber);"></i> Upload Material</h5>
-      <form id="uploadForm" method="post" action="{% url 'quiz:upload_study_material' %}">
+      <h5 class="fw-bold mb-3" style="color: var(--lc-text);">
+        <i class="fas fa-cloud-upload-alt me-2" style="color: var(--lc-amber);"></i> Add Material
+      </h5>
+
+      <!-- Nav Tabs for Input Type -->
+      <ul class="nav nav-pills nav-fill mb-3" id="materialTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active py-1 px-2 small font-monospace" id="file-tab" data-bs-toggle="pill" data-bs-target="#tab-file" type="button" role="tab">
+            <i class="fas fa-file-pdf me-1"></i> File
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link py-1 px-2 small font-monospace" id="notes-tab" data-bs-toggle="pill" data-bs-target="#tab-notes" type="button" role="tab">
+            <i class="fas fa-edit me-1"></i> Notes
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link py-1 px-2 small font-monospace" id="url-tab" data-bs-toggle="pill" data-bs-target="#tab-url" type="button" role="tab">
+            <i class="fas fa-link me-1"></i> URL
+          </button>
+        </li>
+      </ul>
+
+      <!-- Upload Form -->
+      <form id="uploadForm" method="post" action="{% url 'quiz:upload_study_material' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" id="file_url" name="file_url">
+
         <div class="mb-3">
-          <label for="materialTitle" class="form-label" style="color: var(--lc-text);">Document Title</label>
-          <input type="text" class="form-control" id="materialTitle" name="title" required>
+          <label for="materialTitle" class="form-label small fw-bold" style="color: var(--lc-text);">Document Title</label>
+          <input type="text" class="form-control" id="materialTitle" name="title" placeholder="e.g. Chapter 1 - Physics, HTML Guide..." required>
         </div>
-        <div class="mb-3">
-          <label for="materialFile" class="form-label" style="color: var(--lc-text);">File (PDF, DOCX, TXT)</label>
-          <input type="file" class="form-control" id="materialFile" accept=".pdf,.docx,.txt" required>
-          <small id="uploadStatus" class="form-text text-muted"></small>
+
+        <div class="tab-content" id="materialTabContent">
+          <!-- File Upload Tab -->
+          <div class="tab-pane fade show active" id="tab-file" role="tabpanel">
+            <div class="mb-3">
+              <label for="materialFile" class="form-label small fw-bold" style="color: var(--lc-text);">Choose Document (PDF, DOCX, TXT)</label>
+              <input type="file" class="form-control" id="materialFile" name="file" accept=".pdf,.docx,.txt,.md,.doc">
+              <div class="form-text small" style="color: var(--lc-text-muted);">Supports PDF, DOCX, TXT, MD up to 25MB.</div>
+            </div>
+          </div>
+
+          <!-- Direct Notes Paste Tab -->
+          <div class="tab-pane fade" id="tab-notes" role="tabpanel">
+            <div class="mb-3">
+              <label for="materialNotes" class="form-label small fw-bold" style="color: var(--lc-text);">Paste Study Content</label>
+              <textarea class="form-control font-monospace small" id="materialNotes" name="notes" rows="5" placeholder="Paste your notes, summary, definitions, or article text here..."></textarea>
+            </div>
+          </div>
+
+          <!-- External URL Tab -->
+          <div class="tab-pane fade" id="tab-url" role="tabpanel">
+            <div class="mb-3">
+              <label for="materialUrlInput" class="form-label small fw-bold" style="color: var(--lc-text);">Public PDF / Doc URL</label>
+              <input type="url" class="form-control" id="materialUrlInput" placeholder="https://example.com/notes.pdf">
+              <div class="form-text small" style="color: var(--lc-text-muted);">Direct link to an accessible public document.</div>
+            </div>
+          </div>
         </div>
-        <div class="d-grid mt-4">
+
+        <div id="uploadStatus" class="small mb-2"></div>
+
+        <div class="d-grid mt-3">
           <button type="submit" id="uploadBtn" class="btn btn-lc-primary fw-bold">
-            <i class="fas fa-upload me-2"></i> Upload & Save
+            <i class="fas fa-upload me-2"></i> Save Material (+5 XP)
           </button>
         </div>
       </form>
-      
-      <script>
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-          e.preventDefault();
-          const fileInput = document.getElementById('materialFile');
-          const file = fileInput.files[0];
-          const uploadBtn = document.getElementById('uploadBtn');
-          const statusText = document.getElementById('uploadStatus');
-          const fileUrlInput = document.getElementById('file_url');
-          
-          if (!file) return;
-          
-          try {
-            uploadBtn.disabled = true;
-            statusText.innerHTML = '<span class="text-warning"><i class="fas fa-spinner fa-spin"></i> Initializing secure upload...</span>';
-            
-            // 1. Get Presigned URL
-            const urlRes = await fetch(`/study-material/presigned-url/?file_name=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}`);
-            const urlData = await urlRes.json().catch(() => ({}));
-            
-            if (!urlRes.ok) {
-              throw new Error(urlData.error || "Failed to get secure upload link from server. Check logs.");
-            }
-            if (urlData.error) throw new Error(urlData.error);
-            
-            // 2. Upload file directly to Cloud Storage
-            statusText.innerHTML = '<span class="text-primary"><i class="fas fa-spinner fa-spin"></i> Uploading directly to cloud (bypassing limits)...</span>';
-            const putRes = await fetch(urlData.presigned_url, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': file.type || 'application/octet-stream'
-              },
-              body: file
-            });
-            
-            if (!putRes.ok) {
-              const errorText = await putRes.text();
-              console.error("S3 Upload Error:", errorText);
-              throw new Error(`Cloud upload failed: ${putRes.status} ${putRes.statusText}. Check console for details.`);
-            }
-            
-            // 3. Submit form to Django with the final file URL
-            fileUrlInput.value = urlData.file_url;
-            statusText.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Upload successful! Saving...</span>';
-            this.submit();
-            
-          } catch (err) {
-            console.error(err);
-            statusText.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> ${err.message}</span>`;
-            uploadBtn.disabled = false;
-          }
-        });
-      </script>
+    </div>
+
+    <!-- AI Info Card -->
+    <div class="lc-card p-3 mt-3" style="background-color: var(--lc-surface); border: 1px solid var(--lc-border);">
+      <h6 class="fw-bold mb-2 small" style="color: var(--lc-text);">
+        <i class="fas fa-brain text-warning me-2"></i> How AI Exam Generation Works
+      </h6>
+      <ul class="list-unstyled small mb-0" style="color: var(--lc-text-muted); line-height: 1.6;">
+        <li><i class="fas fa-check text-success me-1"></i> Text is extracted directly from your file.</li>
+        <li><i class="fas fa-check text-success me-1"></i> Definitions, facts & concepts are analyzed.</li>
+        <li><i class="fas fa-check text-success me-1"></i> Questions and options come strictly from the text.</li>
+        <li><i class="fas fa-check text-success me-1"></i> Detailed explanations cite the document lines.</li>
+      </ul>
     </div>
   </div>
 
-  <!-- User's Uploaded Materials -->
+  <!-- User's Uploaded Materials Column -->
   <div class="col-lg-8">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="fw-bold mb-0" style="color: var(--lc-text);"><i class="fas fa-file-alt me-2" style="color: var(--lc-blue);"></i> My Study Materials</h5>
+      <h5 class="fw-bold mb-0" style="color: var(--lc-text);">
+        <i class="fas fa-file-alt me-2" style="color: var(--lc-blue);"></i> My Study Materials
+      </h5>
       <div>
         <span class="badge text-dark font-monospace fw-bold me-2" style="background-color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">
           <i class="fas fa-coins me-1"></i> {{ profile.total_xp }} XP
         </span>
-        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">{{ materials|length }} Files</span>
+        <span class="badge font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-text-muted); border: 1px solid var(--lc-border-highlight);">
+          {{ materials|length }} Files
+        </span>
       </div>
     </div>
 
     <div class="row g-3">
       {% for material in materials %}
         <div class="col-md-6">
-          <div class="lc-card p-3 shadow-sm h-100 d-flex flex-column justify-content-between">
+          <div class="lc-card p-3 shadow-sm h-100 d-flex flex-column justify-content-between position-relative">
             <div>
               <div class="d-flex justify-content-between align-items-start mb-2">
-                <h6 class="fw-bold mb-1 text-truncate" style="color: var(--lc-text); max-width: 80%;">{{ material.title }}</h6>
-                <div class="d-flex gap-2">
-                  <span class="badge bg-secondary font-monospace px-1 py-1" style="font-size: 0.65rem; line-height: 1;">FILE</span>
-                  <form method="post" action="{% url 'quiz:delete_study_material' material.id %}" onsubmit="return confirm('Are you sure you want to delete this material?');" class="d-inline">
+                <h6 class="fw-bold mb-1 text-truncate" style="color: var(--lc-text); max-width: 80%;" title="{{ material.title }}">
+                  {{ material.title }}
+                </h6>
+                <div class="d-flex gap-2 align-items-center">
+                  {% if ".pdf" in material.file_url|lower %}
+                    <span class="badge bg-danger font-monospace px-1 py-1" style="font-size: 0.65rem;">PDF</span>
+                  {% elif ".docx" in material.file_url|lower %}
+                    <span class="badge bg-primary font-monospace px-1 py-1" style="font-size: 0.65rem;">DOCX</span>
+                  {% else %}
+                    <span class="badge bg-secondary font-monospace px-1 py-1" style="font-size: 0.65rem;">DOC</span>
+                  {% endif %}
+                  
+                  <form method="post" action="{% url 'quiz:delete_study_material' material.id %}" onsubmit="return confirm('Are you sure you want to delete this study material?');" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm text-danger p-0 border-0 bg-transparent" title="Delete">
+                    <button type="submit" class="btn btn-sm text-danger p-0 border-0 bg-transparent" title="Delete Material">
                       <i class="fas fa-trash"></i>
                     </button>
                   </form>
                 </div>
               </div>
+
               <small class="d-block mb-3" style="color: var(--lc-text-muted);">
                 <i class="far fa-clock me-1"></i> Uploaded: {{ material.uploaded_at|date:"M d, Y" }}
               </small>
             </div>
             
             <div class="d-grid gap-2">
-              <form action="{% url 'quiz:start_ai_exam' material.id %}" method="GET" class="d-flex align-items-center gap-2">
-                <input type="number" name="num_questions" value="5" min="1" max="20" class="form-control form-control-sm text-center" style="width: 60px;" title="Number of questions">
-                <button type="submit" class="btn btn-sm text-dark fw-bold flex-grow-1" style="background: linear-gradient(135deg, var(--lc-amber), #f59e0b);">
+              <!-- Generate AI Exam Form -->
+              <form action="{% url 'quiz:start_ai_exam' material.id %}" method="GET" class="d-flex align-items-center gap-2 ai-exam-form">
+                <div class="input-group input-group-sm" style="width: 100px;">
+                  <span class="input-group-text py-0 px-2 small font-monospace text-muted" title="Number of questions">Qty</span>
+                  <input type="number" name="num_questions" value="5" min="1" max="20" class="form-control form-control-sm text-center font-monospace" title="Number of questions (1-20)">
+                </div>
+                
+                <button type="submit" class="btn btn-sm text-dark fw-bold flex-grow-1 generate-exam-btn" style="background: linear-gradient(135deg, var(--lc-amber), #f59e0b);">
                   <i class="fas fa-magic me-1"></i> Generate AI Exam
                 </button>
               </form>
-              <a href="{{ material.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-external-link-alt me-1"></i> View File
-              </a>
+
+              {% if material.file_url %}
+                <a href="{{ material.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                  <i class="fas fa-external-link-alt me-1"></i> View / Download Document
+                </a>
+              {% endif %}
             </div>
           </div>
         </div>
       {% empty %}
         <div class="col-12">
           <div class="lc-card text-center py-5">
-            <i class="fas fa-folder-open mb-3 fs-1" style="color: var(--lc-text-muted);"></i>
-            <p class="mb-0" style="color: var(--lc-text-muted);">You haven't uploaded any study materials yet.</p>
+            <i class="fas fa-file-upload mb-3 fs-1" style="color: var(--lc-amber);"></i>
+            <h6 class="fw-bold" style="color: var(--lc-text);">No Study Materials Uploaded Yet</h6>
+            <p class="small mb-3" style="color: var(--lc-text-muted); max-width: 400px; margin: 0 auto;">
+              Upload your syllabus notes, PDF documents, or paste text in the form on the left to start generating instant AI practice exams!
+            </p>
           </div>
         </div>
       {% endfor %}
     </div>
   </div>
 </div>
+
+<!-- AI Engine Settings Modal -->
+<div class="modal fade" id="aiSettingsModal" tabindex="-1" aria-labelledby="aiSettingsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background: var(--lc-surface); border: 1px solid var(--lc-border); color: var(--lc-text);">
+      <div class="modal-header border-secondary border-opacity-25">
+        <h5 class="modal-title fw-bold" id="aiSettingsModalLabel">
+          <i class="fas fa-brain text-warning me-2"></i> AI Question Generator Settings
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'quiz:save_ai_settings' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Select AI Provider</label>
+            <select name="provider" class="form-select font-monospace small">
+              <option value="auto" {% if current_provider == 'auto' %}selected{% endif %}>Auto (Best Available / Built-in)</option>
+              <option value="gemini" {% if current_provider == 'gemini' %}selected{% endif %}>Google Gemini (Recommended & Free)</option>
+              <option value="groq" {% if current_provider == 'groq' %}selected{% endif %}>Groq (Ultra-Fast LLaMA 3.3)</option>
+              <option value="openai" {% if current_provider == 'openai' %}selected{% endif %}>OpenAI (GPT-4o-mini)</option>
+              <option value="local" {% if current_provider == 'local' %}selected{% endif %}>Built-in Document Intelligence (Zero Key, 100% Free)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Custom API Key (Optional)</label>
+            <div class="input-group">
+              <input type="password" id="customApiKey" name="api_key" class="form-control font-monospace small" placeholder="{% if masked_key %}{{ masked_key }}{% else %}Enter Gemini, Groq, or OpenAI API key...{% endif %}">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleKeyVisibility()">
+                <i class="fas fa-eye" id="eyeIcon"></i>
+              </button>
+            </div>
+            <div class="form-text small" style="color: var(--lc-text-muted);">
+              Get a 100% free Gemini API key from <a href="https://aistudio.google.com/" target="_blank" class="text-info">Google AI Studio</a> or Groq key from <a href="https://console.groq.com/" target="_blank" class="text-info">Groq</a>.
+            </div>
+          </div>
+
+          <div class="alert alert-secondary py-2 px-3 small mb-0 border-0" style="background: rgba(255,255,255,0.05); color: var(--lc-text-muted);">
+            <i class="fas fa-shield-alt text-success me-1"></i> <strong>Zero-Setup Guarantee:</strong> Even without an API key, our built-in NLP engine extracts real concepts, definitions, and questions strictly from your uploaded document!
+          </div>
+        </div>
+
+        <div class="modal-footer border-secondary border-opacity-25 justify-content-between">
+          <div>
+            {% if masked_key %}
+              <button type="submit" name="clear_key" value="1" class="btn btn-sm btn-outline-danger">Clear Saved Key</button>
+            {% endif %}
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-lc-primary fw-bold">Save Settings</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Modal for Exam Generation -->
+<div class="modal fade" id="generationLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-4 text-center" style="background: var(--lc-surface); border: 1px solid var(--lc-border); color: var(--lc-text);">
+      <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <h5 class="fw-bold mb-1">Generating AI Exam...</h5>
+      <p class="small text-muted mb-0">Analyzing study material, extracting key concepts, and formulating multiple choice questions.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-fill title from file name
+  const fileInput = document.getElementById('materialFile');
+  const titleInput = document.getElementById('materialTitle');
+  const urlInput = document.getElementById('materialUrlInput');
+  const fileUrlHidden = document.getElementById('file_url');
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files[0] && !titleInput.value) {
+        let name = this.files[0].name.replace(/\.[^/.]+$/, "");
+        name = name.replace(/[_-]/g, " ");
+        titleInput.value = name.charAt(0).toUpperCase() + name.slice(1);
+      }
+    });
+  }
+
+  // Handle URL tab input
+  if (urlInput) {
+    urlInput.addEventListener('input', function() {
+      fileUrlHidden.value = this.value;
+      if (this.value && !titleInput.value) {
+        try {
+          const parts = new URL(this.value).pathname.split('/');
+          const last = parts[parts.length - 1];
+          if (last) {
+            titleInput.value = last.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+          }
+        } catch(e){}
+      }
+    });
+  }
+
+  // Handle Form Submission
+  const uploadForm = document.getElementById('uploadForm');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const statusText = document.getElementById('uploadStatus');
+
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', async function(e) {
+      const activeTab = document.querySelector('#materialTabs .nav-link.active').id;
+      const file = fileInput.files[0];
+      const notes = document.getElementById('materialNotes').value.trim();
+      const urlVal = urlInput.value.trim();
+
+      if (activeTab === 'file-tab' && !file) {
+        e.preventDefault();
+        alert('Please choose a file to upload or switch to Notes / URL tab.');
+        return;
+      }
+      if (activeTab === 'notes-tab' && !notes) {
+        e.preventDefault();
+        alert('Please enter or paste your study notes.');
+        return;
+      }
+      if (activeTab === 'url-tab' && !urlVal) {
+        e.preventDefault();
+        alert('Please enter a document URL.');
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving...';
+      statusText.innerHTML = '<span class="text-info"><i class="fas fa-spinner fa-spin me-1"></i> Uploading document...</span>';
+    });
+  }
+
+  // Toggle API Key Visibility
+  function toggleKeyVisibility() {
+    const keyInput = document.getElementById('customApiKey');
+    const icon = document.getElementById('eyeIcon');
+    if (keyInput.type === 'password') {
+      keyInput.type = 'text';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    } else {
+      keyInput.type = 'password';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    }
+  }
+
+  // Show loading modal on Exam Generation submit
+  document.querySelectorAll('.ai-exam-form').forEach(form => {
+    form.addEventListener('submit', function() {
+      const loadingModal = new bootstrap.Modal(document.getElementById('generationLoadingModal'));
+      loadingModal.show();
+    });
+  });
+</script>
 {% endblock %}
