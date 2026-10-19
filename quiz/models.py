@@ -207,7 +207,8 @@ class StudyMaterial(models.Model):
     """User uploaded study material files."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='study_materials')
     title = models.CharField(max_length=255)
-    file_url = models.URLField(max_length=1000, blank=True, null=True, help_text="Direct URL to the file in Supabase Storage")
+    file_url = models.CharField(max_length=1000, blank=True, null=True, help_text="Direct URL or local path to the file")
+    extracted_text = models.TextField(blank=True, default='', help_text="Cached text extracted from the document")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -229,13 +230,16 @@ class ExamQuestion(models.Model):
     """Individual MCQ generated for an exam."""
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
-    choice_a = models.CharField(max_length=255)
-    choice_b = models.CharField(max_length=255)
-    choice_c = models.CharField(max_length=255)
-    choice_d = models.CharField(max_length=255)
-    correct_choice = models.CharField(max_length=1, choices=[('A','A'),('B','B'),('C','C'),('D','D')])
-    user_answer = models.CharField(max_length=1, null=True, blank=True)
+    choice_a = models.TextField()
+    choice_b = models.TextField()
+    choice_c = models.TextField()
+    choice_d = models.TextField()
+    correct_choice = models.CharField(max_length=10, default='A')
+    user_answer = models.CharField(max_length=10, null=True, blank=True)
     explanation = models.TextField(blank=True, default='')
 
     def is_correct(self):
-        return self.user_answer == self.correct_choice
+        if not self.user_answer:
+            return False
+        return self.user_answer.strip().upper() == self.correct_choice.strip().upper()
+

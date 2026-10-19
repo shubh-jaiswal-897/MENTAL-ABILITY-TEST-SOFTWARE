@@ -25,27 +25,38 @@
       <form id="examForm" method="post" action="{% url 'quiz:submit_ai_exam' exam.id %}">
         {% csrf_token %}
         
+        <div class="sticky-top py-2 mb-4" style="background: var(--lc-surface); z-index: 10; border-bottom: 1px solid var(--lc-border);">
+          <div class="d-flex justify-content-between align-items-center small font-monospace">
+            <span style="color: var(--lc-text-muted);">
+              Progress: <strong id="answeredCount" class="text-warning">0</strong> / {{ questions|length }} Answered
+            </span>
+            <div class="progress flex-grow-1 mx-3" style="height: 6px; background-color: var(--lc-surface-hover);">
+              <div id="examProgressBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
         {% for q in questions %}
-          <div class="mb-5">
+          <div class="mb-5 question-block" id="question-block-{{ q.id }}">
             <h6 class="fw-bold mb-3" style="color: var(--lc-text);">
               <span class="text-muted me-2">{{ forloop.counter }}.</span> {{ q.question_text }}
             </h6>
             
             <div class="list-group list-group-flush gap-2">
-              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
-                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="A" required>
+              <label class="list-group-item rounded border option-label" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2 question-radio" type="radio" name="question_{{ q.id }}" value="A">
                 A. {{ q.choice_a }}
               </label>
-              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
-                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="B" required>
+              <label class="list-group-item rounded border option-label" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2 question-radio" type="radio" name="question_{{ q.id }}" value="B">
                 B. {{ q.choice_b }}
               </label>
-              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
-                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="C" required>
+              <label class="list-group-item rounded border option-label" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2 question-radio" type="radio" name="question_{{ q.id }}" value="C">
                 C. {{ q.choice_c }}
               </label>
-              <label class="list-group-item rounded border" style="background-color: var(--lc-surface-hover); cursor: pointer;">
-                <input class="form-check-input me-2" type="radio" name="question_{{ q.id }}" value="D" required>
+              <label class="list-group-item rounded border option-label" style="background-color: var(--lc-surface-hover); cursor: pointer;">
+                <input class="form-check-input me-2 question-radio" type="radio" name="question_{{ q.id }}" value="D">
                 D. {{ q.choice_d }}
               </label>
             </div>
@@ -64,26 +75,48 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    // 20 seconds per question
     const totalQuestions = parseInt("{{ exam.total|default:'0' }}") || parseInt("{{ questions|length }}");
-    let timeLeft = totalQuestions * 20;
+    // 45 seconds per question (up to 75 minutes for 100 questions)
+    let timeLeft = Math.max(totalQuestions * 45, 60);
     const timerDisplay = document.getElementById("timer");
     const examForm = document.getElementById("examForm");
+    const answeredCountEl = document.getElementById("answeredCount");
+    const progressBar = document.getElementById("examProgressBar");
+
+    // Track answered questions count
+    function updateAnsweredCount() {
+      const answered = new Set();
+      document.querySelectorAll('.question-radio:checked').forEach(r => answered.add(r.name));
+      const count = answered.size;
+      if (answeredCountEl) answeredCountEl.textContent = count;
+      if (progressBar && totalQuestions > 0) {
+        const pct = Math.round((count / totalQuestions) * 100);
+        progressBar.style.width = pct + '%';
+      }
+    }
+
+    document.querySelectorAll('.question-radio').forEach(radio => {
+      radio.addEventListener('change', updateAnsweredCount);
+    });
 
     function updateTimerDisplay() {
-      const minutes = Math.floor(timeLeft / 60);
+      const hours = Math.floor(timeLeft / 3600);
+      const minutes = Math.floor((timeLeft % 3600) / 60);
       const seconds = timeLeft % 60;
-      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      if (hours > 0) {
+        timerDisplay.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      } else {
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
       
-      // Make it flash when less than 10 seconds remaining if animate.css is available
-      if (timeLeft <= 10) {
-        timerDisplay.style.animation = "flash 1s infinite";
+      if (timeLeft <= 30) {
+        timerDisplay.classList.add('text-danger');
+        timerDisplay.classList.remove('text-warning');
       }
     }
 
     const timerInterval = setInterval(function() {
       timeLeft--;
-      
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         timerDisplay.textContent = "00:00";
@@ -93,8 +126,8 @@
       }
     }, 1000);
 
-    // Initial display
     updateTimerDisplay();
+    updateAnsweredCount();
   });
 </script>
 {% endblock %}

@@ -114,5 +114,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 MEDIA_URL = '/media/'
-import os
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+if os.environ.get('VERCEL'):
+    MEDIA_ROOT = '/tmp/media'
+else:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+try:
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
+except Exception:
+    pass
+

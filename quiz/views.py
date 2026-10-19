@@ -753,72 +753,138 @@ def get_presigned_url(request):
 def upload_study_material(request):
     """
     Handles file upload, cloud URL linking, or text note creation.
-    Saves files locally into media/study_material/ when direct file is provided.
+    Saves files locally or caches extracted text in DB for instant, reliable AI exam generation.
     """
     if request.method == 'POST':
-        title = request.POST.get('title', '').strip()
-        file_obj = request.FILES.get('file')
-        file_url = request.POST.get('file_url', '').strip()
-        notes = request.POST.get('notes', '').strip()
-        
-        final_file_url = None
-        
-        # 1. Direct file upload
-        if file_obj:
-            ext = os.path.splitext(file_obj.name)[1].lower()
-            allowed = ['.pdf', '.docx', '.txt', '.md', '.doc']
-            if ext not in allowed:
-                messages.error(request, f"Unsupported file type ({ext}). Please upload a PDF, DOCX, or TXT file.")
-                return redirect('quiz:study_material')
-
-            if file_obj.size > 25 * 1024 * 1024:
-                messages.error(request, "File size exceeds 25MB limit. Please choose a smaller file.")
-                return redirect('quiz:study_material')
-
-            import uuid
-            from django.core.files.storage import default_storage
-            safe_basename = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', file_obj.name)
-            unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_{safe_basename}"
-            save_rel_path = os.path.join('study_material', unique_filename)
-            saved_name = default_storage.save(save_rel_path, file_obj)
-            final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
-
-            if not title:
-                title = os.path.splitext(file_obj.name)[0].replace('_', ' ').replace('-', ' ').title()
-
-        # 2. Pasted text notes
-        elif notes:
-            import uuid
-            from django.core.files.storage import default_storage
-            from django.core.files.base import ContentFile
-            unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_notes.txt"
-            save_rel_path = os.path.join('study_material', unique_filename)
-            saved_name = default_storage.save(save_rel_path, ContentFile(notes.encode('utf-8')))
-            final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
-
-            if not title:
-                title = f"Notes - {notes[:30]}..."
-
-        # 3. Cloud / External URL
-        elif file_url:
-            final_file_url = file_url
-            if not title:
-                title = "Study Resource"
-
-        if final_file_url and title:
-            StudyMaterial.objects.create(
-                user=request.user,
-                title=title,
-                file_url=final_file_url
-            )
+        try:
+            upload_tab = request.POST.get('upload_tab', 'file').strip()
+            title = request.POST.get('title', '').strip()
+            file_obj = request.FILES.get('file')
+            file_url = request.POST.get('file_url', '').strip()
+            notes = request.POST.get('notes', '').strip()
             
-            profile = get_or_create_user_profile(request.user)
-            profile.total_xp += 5
-            profile.save()
-            
-            messages.success(request, f"'{title}' uploaded successfully! You earned +5 XP.")
-        else:
-            messages.error(request, "Please provide a document title and select a file or paste study notes.")
+            final_file_url = None
+            extracted_text = ""
+
+            # 1. Pasted text notes
+            if upload_tab == 'notes' or (notes and not file_obj and not file_url):
+                if not notes or len(notes.strip()) < 15:
+                    messages.error(request, "Please enter at least 15 characters of study notes to generate an AI exam.")
+                    return redirect('quiz:study_material')
+                extracted_text = notes.strip()
+                if not title:
+                    title = f"Notes - {notes[:30]}..."
+                import uuid
+                from django.core.files.storage import default_storage
+                from django.core.files.base import ContentFile
+                unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_notes.txt"
+                save_rel_path = os.path.join('study_material', unique_filename)
+                try:
+                    saved_name = default_storage.save(save_rel_path, ContentFile(notes.encode('utf-8')))
+                    final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
+                except Exception as save_err:
+                    logger.warning(f"Could not save notes to disk: {save_err}")
+                    final_file_url = f"/media/study_material/{unique_filename}"
+
+            # 2. External URL
+            elif upload_tab == 'url' or (file_url and not file_obj):
+                if not file_url:
+                    messages.error(request, "Please enter a valid document URL.")
+                    return redirect('quiz:study_material')
+                final_file_url = file_url
+                if not title:
+                    title = "Study Resource"
+                try:
+                    from .services import extract_text_from_file
+                    extracted_text = extract_text_from_file(file_url)
+                except Exception as ex:
+                    logger.warning(f"URL extraction warning: {ex}")
+
+                if not extracted_text or len(extracted_text.strip()) < 15:
+                    messages.error(
+                        request,
+                        "Could not extract sufficient readable text from the provided URL. "
+                        "Please verify the URL is public, accessible, and points to a document with text content."
+                    )
+                    return redirect('quiz:study_material')
+
+            # 3. Direct file upload
+            else:
+                if not file_obj:
+                    messages.error(request, "Please choose a document file (PDF, DOCX, TXT) to upload.")
+                    return redirect('quiz:study_material')
+
+                ext = os.path.splitext(file_obj.name)[1].lower()
+                allowed = ['.pdf', '.docx', '.txt', '.md', '.doc']
+                if ext not in allowed:
+                    messages.error(request, f"Unsupported file type ({ext}). Please upload a PDF, DOCX, or TXT file.")
+                    return redirect('quiz:study_material')
+
+                if file_obj.size > 25 * 1024 * 1024:
+                    messages.error(request, "File size exceeds 25MB limit. Please choose a smaller file.")
+                    return redirect('quiz:study_material')
+
+                if not title:
+                    title = os.path.splitext(file_obj.name)[0].replace('_', ' ').replace('-', ' ').title()
+
+                # Extract text in memory first
+                try:
+                    from .services import extract_text_from_file_object, extract_text_via_gemini_multimodal
+                    extracted_text = extract_text_from_file_object(file_obj, file_obj.name)
+
+                    # Multimodal fallback for scanned PDFs if Gemini API key exists
+                    if (not extracted_text or len(extracted_text.strip()) < 20) and ext == '.pdf':
+                        api_key = request.session.get('ai_api_key') or os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+                        if api_key:
+                            file_obj.seek(0)
+                            mm_text = extract_text_via_gemini_multimodal(file_obj.read(), api_key)
+                            if mm_text and len(mm_text.strip()) >= 20:
+                                extracted_text = mm_text
+                            file_obj.seek(0)
+                except Exception as ex:
+                    logger.warning(f"In-memory extraction warning: {ex}")
+
+                # Reject files that contain no readable text layers
+                if not extracted_text or len(extracted_text.strip()) < 20:
+                    messages.error(
+                        request,
+                        f"Could not extract sufficient readable text from '{file_obj.name}'. "
+                        "This file appears to be a scanned image or photo PDF without a selectable text layer. "
+                        "Please upload a document with readable text (PDF, Word DOCX, TXT), or paste your study notes directly in the 'Notes' tab."
+                    )
+                    return redirect('quiz:study_material')
+
+                # Safely attempt to persist to default_storage if writable
+                import uuid
+                from django.core.files.storage import default_storage
+                safe_basename = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', file_obj.name)
+                unique_filename = f"{request.user.id}_{uuid.uuid4().hex[:8]}_{safe_basename}"
+                save_rel_path = os.path.join('study_material', unique_filename)
+                try:
+                    saved_name = default_storage.save(save_rel_path, file_obj)
+                    final_file_url = f"{settings.MEDIA_URL}{saved_name}".replace('\\', '/')
+                except Exception as save_err:
+                    logger.warning(f"Could not save file to disk (e.g. serverless read-only filesystem): {save_err}")
+                    final_file_url = f"/media/study_material/{unique_filename}"
+
+            if (final_file_url or extracted_text) and title:
+                StudyMaterial.objects.create(
+                    user=request.user,
+                    title=title,
+                    file_url=final_file_url,
+                    extracted_text=extracted_text
+                )
+                
+                profile = get_or_create_user_profile(request.user)
+                profile.total_xp += 5
+                profile.save()
+                
+                messages.success(request, f"'{title}' uploaded successfully! You earned +5 XP.")
+            else:
+                messages.error(request, "Please provide a document title and select a file or paste study notes.")
+        except Exception as e:
+            logger.exception("Error in upload_study_material: %s", e)
+            messages.error(request, f"Upload error: {str(e)}")
             
     return redirect('quiz:study_material')
 
@@ -826,118 +892,155 @@ def upload_study_material(request):
 @login_required
 def delete_study_material(request, material_id):
     if request.method == 'POST':
-        material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
-        # Safely delete local file if present
-        if material.file_url:
-            if material.file_url.startswith(settings.MEDIA_URL) or material.file_url.startswith('/media/'):
-                rel_path = material.file_url.replace(settings.MEDIA_URL, '').lstrip('/')
-                full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
-                if os.path.exists(full_path):
-                    try:
-                        os.remove(full_path)
-                    except Exception:
-                        pass
-        material.delete()
-        messages.success(request, "Study material deleted successfully.")
+        try:
+            material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
+            # Safely delete local file if present
+            if material.file_url:
+                if material.file_url.startswith(settings.MEDIA_URL) or material.file_url.startswith('/media/'):
+                    rel_path = material.file_url.replace(settings.MEDIA_URL, '').lstrip('/')
+                    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+                    if os.path.exists(full_path):
+                        try:
+                            os.remove(full_path)
+                        except Exception:
+                            pass
+            material.delete()
+            messages.success(request, "Study material deleted successfully.")
+        except Exception as e:
+            logger.exception("Error deleting study material: %s", e)
+            messages.error(request, f"Error deleting study material: {str(e)}")
     return redirect('quiz:study_material')
 
 
 @login_required
 def start_ai_exam(request, material_id):
-    material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
-    
-    # Question count (1 - 20)
     try:
-        num_questions = int(request.GET.get('num_questions', 5))
-        if num_questions > 20:
-            num_questions = 20
-        elif num_questions < 1:
-            num_questions = 1
-    except ValueError:
-        num_questions = 5
+        material = get_object_or_404(StudyMaterial, id=material_id, user=request.user)
         
-    provider = request.GET.get('provider') or request.session.get('ai_provider')
-    api_key = request.GET.get('api_key') or request.session.get('ai_api_key')
-    
-    if not material.file_url:
-        messages.error(request, "This study material has no attached file. Please upload a document first.")
-        return redirect('quiz:study_material')
+        # Question count (1 - 100)
+        try:
+            num_questions = int(request.GET.get('num_questions', 5))
+            if num_questions > 100:
+                num_questions = 100
+            elif num_questions < 1:
+                num_questions = 1
+        except ValueError:
+            num_questions = 5
+            
+        provider = request.GET.get('provider') or request.session.get('ai_provider')
+        api_key = request.GET.get('api_key') or request.session.get('ai_api_key')
         
-    # Extract text
-    text = extract_text_from_file(material.file_url)
-    if not text or len(text.strip()) < 30:
-        messages.error(request, "Could not extract sufficient readable text from the file. Please ensure it contains readable text.")
-        return redirect('quiz:study_material')
-        
-    mcqs, error_msg, engine_used = generate_mcqs_from_text(
-        text=text,
-        title=material.title,
-        num_questions=num_questions,
-        api_key=api_key,
-        provider=provider
-    )
-    
-    if not mcqs:
-        messages.error(request, f"Failed to generate questions: {error_msg}")
-        return redirect('quiz:study_material')
-        
-    # Create Exam
-    exam = Exam.objects.create(material=material, user=request.user, total=len(mcqs))
-    
-    for q in mcqs:
-        ExamQuestion.objects.create(
-            exam=exam,
-            question_text=q.get('question_text', ''),
-            choice_a=q.get('choice_a', ''),
-            choice_b=q.get('choice_b', ''),
-            choice_c=q.get('choice_c', ''),
-            choice_d=q.get('choice_d', ''),
-            correct_choice=q.get('correct_choice', 'A'),
-            explanation=q.get('explanation', '')
+        # Extract or use cached text
+        text = material.extracted_text
+        if not text:
+            if material.file_url:
+                text = extract_text_from_file(material.file_url)
+                if text:
+                    # Cache in DB so future exam generation is instant
+                    material.extracted_text = text
+                    material.save(update_fields=['extracted_text'])
+            
+        if not text or len(text.strip()) < 15:
+            messages.error(
+                request,
+                f"Could not extract sufficient readable text from '{material.title}'. "
+                "This document appears to be empty or a scanned image without selectable text. "
+                "Please delete it and upload a digital PDF/Word document, or paste your study notes in the Notes tab."
+            )
+            return redirect('quiz:study_material')
+            
+        mcqs, error_msg, engine_used = generate_mcqs_from_text(
+            text=text,
+            title=material.title,
+            num_questions=num_questions,
+            api_key=api_key,
+            provider=provider
         )
         
-    messages.success(request, f"Exam generated successfully ({len(mcqs)} questions)! Best of luck.")
-    return redirect('quiz:take_ai_exam', exam_id=exam.id)
+        if not mcqs:
+            messages.error(request, f"Failed to generate questions: {error_msg}")
+            return redirect('quiz:study_material')
+            
+        # Create Exam
+        exam = Exam.objects.create(material=material, user=request.user, total=len(mcqs))
+        
+        for q in mcqs:
+            # Clean and sanitize choices and correct choice
+            corr_choice = 'A'
+            raw_c = str(q.get('correct_choice', 'A')).strip().upper()
+            for ch in raw_c:
+                if ch in ('A', 'B', 'C', 'D'):
+                    corr_choice = ch
+                    break
+
+            ExamQuestion.objects.create(
+                exam=exam,
+                question_text=str(q.get('question_text', '')).strip(),
+                choice_a=str(q.get('choice_a', '')).strip(),
+                choice_b=str(q.get('choice_b', '')).strip(),
+                choice_c=str(q.get('choice_c', '')).strip(),
+                choice_d=str(q.get('choice_d', '')).strip(),
+                correct_choice=corr_choice,
+                explanation=str(q.get('explanation', '')).strip()
+            )
+            
+        messages.success(request, f"Exam generated successfully ({len(mcqs)} questions via {engine_used})! Best of luck.")
+        return redirect('quiz:take_ai_exam', exam_id=exam.id)
+    except Exception as e:
+        logger.exception("Error in start_ai_exam: %s", e)
+        messages.error(request, f"An error occurred while generating the exam: {str(e)}")
+        return redirect('quiz:study_material')
 
 @login_required
 def take_ai_exam(request, exam_id):
-    exam = get_object_or_404(Exam, id=exam_id, user=request.user)
-    if exam.completed_at:
-        messages.info(request, "You have already completed this exam.")
+    try:
+        exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+        if exam.completed_at:
+            messages.info(request, "You have already completed this exam.")
+            return redirect('quiz:study_material')
+            
+        questions = exam.questions.all()
+        return render(request, 'quiz/take_ai_exam.html', {'exam': exam, 'questions': questions})
+    except Exception as e:
+        logger.exception("Error in take_ai_exam: %s", e)
+        messages.error(request, f"Error loading exam: {str(e)}")
         return redirect('quiz:study_material')
-        
-    questions = exam.questions.all()
-    return render(request, 'quiz/take_ai_exam.html', {'exam': exam, 'questions': questions})
 
 @login_required
 def submit_ai_exam(request, exam_id):
-    if request.method != 'POST':
+    try:
+        if request.method != 'POST':
+            return redirect('quiz:study_material')
+            
+        exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+        if exam.completed_at:
+            return redirect('quiz:study_material')
+            
+        score = 0
+        for q in exam.questions.all():
+            ans = request.POST.get(f'question_{q.id}')
+            if ans:
+                q.user_answer = ans.strip().upper()
+                q.save()
+                if q.user_answer == q.correct_choice.strip().upper():
+                    score += 1
+                    
+        exam.score = score
+        exam.completed_at = timezone.now()
+        exam.save()
+        
+        # Award XP for AI practice (e.g., 10 XP per correct)
+        if hasattr(request.user, 'profile'):
+            request.user.profile.total_xp += (score * 10)
+            request.user.profile.save()
+            
+        messages.success(request, f"Exam completed! You scored {score} / {exam.total}.")
+        return render(request, 'quiz/ai_exam_result.html', {'exam': exam})
+    except Exception as e:
+        logger.exception("Error in submit_ai_exam: %s", e)
+        messages.error(request, f"Error submitting exam: {str(e)}")
         return redirect('quiz:study_material')
-        
-    exam = get_object_or_404(Exam, id=exam_id, user=request.user)
-    if exam.completed_at:
-        return redirect('quiz:study_material')
-        
-    score = 0
-    for q in exam.questions.all():
-        ans = request.POST.get(f'question_{q.id}')
-        if ans:
-            q.user_answer = ans
-            q.save()
-            if ans == q.correct_choice:
-                score += 1
-                
-    exam.score = score
-    exam.completed_at = timezone.now()
-    exam.save()
-    
-    # Award XP for AI practice (e.g., 10 XP per correct)
-    if hasattr(request.user, 'profile'):
-        request.user.profile.total_xp += (score * 10)
-        request.user.profile.save()
-        
-    messages.success(request, f"Exam completed! You scored {score} / {exam.total}.")
-    return render(request, 'quiz/ai_exam_result.html', {'exam': exam})
+
 
 
 @login_required
