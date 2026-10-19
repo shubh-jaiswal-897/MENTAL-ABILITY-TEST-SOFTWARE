@@ -71,7 +71,7 @@
           </li>
         </ul>
 
-        <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2 gap-xl-3 flex-nowrap">
           <!-- Dynamic Language Selector Dropdown -->
           <select id="languageSelect" class="theme-selector" title="Select UI Language" onchange="switchLanguage(this.value)">
             <option value="en">🌐 English</option>
@@ -106,7 +106,7 @@
           </select>
 
           <!-- Dynamic Theme Selector Dropdown -->
-          <select id="themeSelect" class="theme-selector me-2" title="Switch UI Theme" onchange="switchTheme(this.value)">
+          <select id="themeSelect" class="theme-selector me-1" title="Switch UI Theme" onchange="switchTheme(this.value)">
             <option value="clean-light">☀️ Clean Light</option>
             <option value="cyber-neon">🎨 Cyber Neon</option>
             <option value="sapphire-gold">👑 Sapphire Gold</option>
@@ -126,9 +126,9 @@
               <i class="fas fa-bolt me-1"></i> {{ profile.total_xp|default:0 }} XP
             </div>
 
-            <!-- User Rank Badge -->
-            <span class="rank-badge font-monospace d-none d-md-inline">
-              <i class="fas fa-crown me-1"></i> {{ profile.rank_title|default:"Novice" }}
+            <!-- User Rank Badge (Compact & Responsive) -->
+            <span class="rank-badge font-monospace d-none d-lg-inline text-truncate" style="max-width: 130px;" title="Rank: {{ profile.rank_title|default:'Novice' }}">
+              <i class="fas fa-crown me-1"></i> {{ profile.short_rank_title|default:"Novice" }}
             </span>
 
             <form action="{% url 'logout' %}" method="post" class="d-inline">

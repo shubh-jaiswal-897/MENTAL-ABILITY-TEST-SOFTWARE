@@ -56,9 +56,22 @@ class UserProfile(models.Model):
         elif self.total_xp >= 200:
             return "Aptitude Scholar 🎓"
         elif self.total_xp >= 50:
-            return "Problem Solver ⚡"
+            return "Solver ⚡"
         else:
             return "Novice Explorer"
+
+    @property
+    def short_rank_title(self):
+        if self.total_xp >= 1000:
+            return "GM 👑"
+        elif self.total_xp >= 500:
+            return "Master 🧠"
+        elif self.total_xp >= 200:
+            return "Scholar 🎓"
+        elif self.total_xp >= 50:
+            return "Solver ⚡"
+        else:
+            return "Novice"
 
 
 class TestAttempt(models.Model):
