@@ -10,7 +10,7 @@
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🧠</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.1">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.4">
   {% block extra_head %}{% endblock %}
 </head>
 
@@ -116,24 +116,27 @@
 
 
           {% if user.is_authenticated %}
-            <!-- Streak Flame Badge -->
-            <div class="streak-badge" title="Daily Activity Streak">
-              <i class="fas fa-fire me-1"></i> {{ profile.streak_count|default:1 }}d
-            </div>
-            
-            <!-- XP Badge -->
-            <div class="xp-badge" title="Total Experience Points">
-              <i class="fas fa-bolt me-1"></i> {{ profile.total_xp|default:0 }} XP
+            <!-- Gamification Badges Cluster -->
+            <div class="user-badges-cluster d-flex align-items-center gap-1 gap-xl-2">
+              <!-- Streak Flame Badge -->
+              <div class="streak-badge" title="Daily Activity Streak: {{ profile.streak_count|default:1 }} day(s)">
+                <i class="fas fa-fire me-1" style="color: var(--lc-amber);"></i><span>{{ profile.streak_count|default:1 }}d</span>
+              </div>
+              
+              <!-- XP Badge -->
+              <div class="xp-badge" title="Total Experience Points: {{ profile.total_xp|default:0 }} XP">
+                <i class="fas fa-bolt me-1" style="color: var(--lc-blue);"></i><span>{{ profile.total_xp|default:0 }} XP</span>
+              </div>
+
+              <!-- User Rank Badge (Compact & Responsive) -->
+              <span class="rank-badge font-monospace text-truncate" title="Rank: {{ profile.rank_title|default:'Novice' }}">
+                <span>{{ profile.short_rank_title|default:"Novice" }}</span>
+              </span>
             </div>
 
-            <!-- User Rank Badge (Compact & Responsive) -->
-            <span class="rank-badge font-monospace d-none d-lg-inline text-truncate" style="max-width: 130px;" title="Rank: {{ profile.rank_title|default:'Novice' }}">
-              <i class="fas fa-crown me-1"></i> {{ profile.short_rank_title|default:"Novice" }}
-            </span>
-
-            <form action="{% url 'logout' %}" method="post" class="d-inline">
+            <form action="{% url 'logout' %}" method="post" class="d-inline m-0">
               {% csrf_token %}
-              <button class="btn btn-lc-secondary btn-sm rounded-pill px-3" type="submit" title="Logout">
+              <button class="btn btn-lc-secondary btn-sm rounded-pill px-3 py-1" type="submit" title="Logout">
                 <i class="fas fa-sign-out-alt me-1"></i> Exit
               </button>
             </form>
