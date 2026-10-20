@@ -10,7 +10,7 @@
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🧠</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.6">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.7">
   {% block extra_head %}{% endblock %}
 </head>
 
@@ -24,12 +24,15 @@
         </div>
         <div class="d-flex align-items-center">
           <span class="fw-extrabold brand-title" style="color: var(--lc-text);">MENTAL ABILITY</span>
-          <span class="badge brand-badge ms-1 font-monospace">SOFTWARE</span>
+          <span class="badge brand-badge ms-1 font-monospace d-none d-sm-inline">SOFTWARE</span>
         </div>
       </a>
 
+      <!-- High-contrast crisp 3-bar toggler for all themes -->
       <button class="navbar-toggler custom-navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#leetcodeNavbar" aria-controls="leetcodeNavbar" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+        <span class="toggler-bar bar-1"></span>
+        <span class="toggler-bar bar-2"></span>
+        <span class="toggler-bar bar-3"></span>
       </button>
 
       <div class="collapse navbar-collapse" id="leetcodeNavbar">
@@ -71,53 +74,57 @@
           </li>
         </ul>
 
-        <div class="d-flex align-items-center gap-1 gap-lg-2 flex-nowrap ms-auto">
-          <!-- Dynamic Language Selector Dropdown -->
-          <select id="languageSelect" class="theme-selector" title="Select UI Language" onchange="switchLanguage(this.value)">
-            <option value="en">🌐 English</option>
-            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
-            <option value="gu">🇮🇳 ગુજરાતી (Gujarati)</option>
-            <option value="mr">🇮🇳 मराठी (Marathi)</option>
-            <option value="bn">🇮🇳 বাংলা (Bengali)</option>
-            <option value="ta">🇮🇳 தமிழ் (Tamil)</option>
-            <option value="te">🇮🇳 తెలుగు (Telugu)</option>
-            <option value="kn">🇮🇳 ಕನ್ನಡ (Kannada)</option>
-            <option value="ml">🇮🇳 മലയാളം (Malayalam)</option>
-            <option value="pa">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
-            <option value="ur">🇵🇰 اردو (Urdu)</option>
-            <option value="es">🇪🇸 Español (Spanish)</option>
-            <option value="fr">🇫🇷 Français (French)</option>
-            <option value="de">🇩🇪 Deutsch (German)</option>
-            <option value="it">🇮🇹 Italiano (Italian)</option>
-            <option value="pt">🇵🇹 Português (Portuguese)</option>
-            <option value="ru">🇷🇺 Русский (Russian)</option>
-            <option value="zh-CN">🇨🇳 中文 (Chinese Simplified)</option>
-            <option value="zh-TW">🇨🇳 中文 (Chinese Traditional)</option>
-            <option value="ja">🇯🇵 日本語 (Japanese)</option>
-            <option value="ko">🇰🇷 한국어 (Korean)</option>
-            <option value="ar">🇦🇪 العربية (Arabic)</option>
-            <option value="tr">🇹🇷 Türkçe (Turkish)</option>
-            <option value="vi">🇻🇳 Tiếng Việt (Vietnamese)</option>
-            <option value="id">🇮🇩 Bahasa Indonesia (Indonesian)</option>
-            <option value="nl">🇳🇱 Nederlands (Dutch)</option>
-            <option value="pl">🇵🇱 Polski (Polish)</option>
-            <option value="el">🇬🇷 Ελληνικά (Greek)</option>
-            <option value="th">🇹🇭 ไทย (Thai)</option>
-          </select>
+        <!-- Mobile Divider Between Nav Links & User Controls -->
+        <div class="mobile-nav-divider my-2 d-lg-none"></div>
 
-          <!-- Dynamic Theme Selector Dropdown -->
-          <select id="themeSelect" class="theme-selector me-1" title="Switch UI Theme" onchange="switchTheme(this.value)">
-            <option value="clean-light">☀️ Clean Light</option>
-            <option value="cyber-neon">🎨 Cyber Neon</option>
-            <option value="sapphire-gold">👑 Sapphire Gold</option>
-            <option value="emerald-forest">🌿 Emerald Forest</option>
-          </select>
+        <div class="navbar-controls-wrapper d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 ms-lg-auto">
+          <!-- Selectors Cluster (Language & Theme) -->
+          <div class="selectors-cluster d-flex gap-2">
+            <!-- Dynamic Language Selector Dropdown -->
+            <select id="languageSelect" class="theme-selector" title="Select UI Language" onchange="switchLanguage(this.value)">
+              <option value="en">🌐 English</option>
+              <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+              <option value="gu">🇮🇳 ગુજરાતી (Gujarati)</option>
+              <option value="mr">🇮🇳 मराठी (Marathi)</option>
+              <option value="bn">🇮🇳 বাংলা (Bengali)</option>
+              <option value="ta">🇮🇳 தமிழ் (Tamil)</option>
+              <option value="te">🇮🇳 తెలుగు (Telugu)</option>
+              <option value="kn">🇮🇳 ಕನ್ನಡ (Kannada)</option>
+              <option value="ml">🇮🇳 മലയാളം (Malayalam)</option>
+              <option value="pa">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</option>
+              <option value="ur">🇵🇰 اردو (Urdu)</option>
+              <option value="es">🇪🇸 Español (Spanish)</option>
+              <option value="fr">🇫🇷 Français (French)</option>
+              <option value="de">🇩🇪 Deutsch (German)</option>
+              <option value="it">🇮🇹 Italiano (Italian)</option>
+              <option value="pt">🇵🇹 Português (Portuguese)</option>
+              <option value="ru">🇷🇺 Русский (Russian)</option>
+              <option value="zh-CN">🇨🇳 中文 (Chinese Simplified)</option>
+              <option value="zh-TW">🇨🇳 中文 (Chinese Traditional)</option>
+              <option value="ja">🇯🇵 日本語 (Japanese)</option>
+              <option value="ko">🇰🇷 한국어 (Korean)</option>
+              <option value="ar">🇦🇪 العربية (Arabic)</option>
+              <option value="tr">🇹🇷 Türkçe (Turkish)</option>
+              <option value="vi">🇻🇳 Tiếng Việt (Vietnamese)</option>
+              <option value="id">🇮🇩 Bahasa Indonesia (Indonesian)</option>
+              <option value="nl">🇳🇱 Nederlands (Dutch)</option>
+              <option value="pl">🇵🇱 Polski (Polish)</option>
+              <option value="el">🇬🇷 Ελληνικά (Greek)</option>
+              <option value="th">🇹🇭 ไทย (Thai)</option>
+            </select>
 
-
+            <!-- Dynamic Theme Selector Dropdown -->
+            <select id="themeSelect" class="theme-selector" title="Switch UI Theme" onchange="switchTheme(this.value)">
+              <option value="clean-light">☀️ Clean Light</option>
+              <option value="cyber-neon">🎨 Cyber Neon</option>
+              <option value="sapphire-gold">👑 Sapphire Gold</option>
+              <option value="emerald-forest">🌿 Emerald Forest</option>
+            </select>
+          </div>
 
           {% if user.is_authenticated %}
             <!-- Gamification Badges Cluster -->
-            <div class="user-badges-cluster d-flex align-items-center gap-1 gap-xl-2">
+            <div class="user-badges-cluster d-flex align-items-center justify-content-between gap-1 gap-xl-2">
               <!-- Streak Flame Badge -->
               <div class="streak-badge" title="Daily Activity Streak: {{ profile.streak_count|default:1 }} day(s)">
                 <i class="fas fa-fire me-1" style="color: var(--lc-amber);"></i><span>{{ profile.streak_count|default:1 }}d</span>
@@ -134,15 +141,18 @@
               </span>
             </div>
 
-            <form action="{% url 'logout' %}" method="post" class="d-inline m-0">
+            <!-- Logout / Exit Action -->
+            <form action="{% url 'logout' %}" method="post" class="d-inline m-0 w-100-mobile">
               {% csrf_token %}
-              <button class="btn btn-lc-secondary btn-sm rounded-pill exit-btn" type="submit" title="Logout">
+              <button class="btn btn-lc-secondary btn-sm rounded-pill exit-btn w-100-mobile" type="submit" title="Logout">
                 <i class="fas fa-sign-out-alt me-1"></i> Exit
               </button>
             </form>
           {% else %}
-            <a class="btn btn-lc-secondary btn-sm rounded-pill px-3" href="{% url 'login' %}">Log In</a>
-            <a class="btn btn-lc-primary btn-sm rounded-pill px-3" href="{% url 'quiz:signup' %}">Sign Up</a>
+            <div class="auth-buttons-cluster d-flex gap-2 w-100-mobile">
+              <a class="btn btn-lc-secondary btn-sm rounded-pill px-3 flex-fill text-center" href="{% url 'login' %}">Log In</a>
+              <a class="btn btn-lc-primary btn-sm rounded-pill px-3 flex-fill text-center" href="{% url 'quiz:signup' %}">Sign Up</a>
+            </div>
           {% endif %}
         </div>
       </div>
