@@ -10,13 +10,13 @@
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🧠</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.2">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}?v=2.3">
   {% block extra_head %}{% endblock %}
 </head>
 
 <body>
   <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-xl navbar-leetcode sticky-top">
+  <nav class="navbar navbar-expand-lg navbar-leetcode sticky-top">
     <div class="container-fluid px-2 px-sm-3 px-xl-4">
       <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'quiz:index' %}">
         <div class="brand-icon-box">
@@ -36,7 +36,7 @@
       </button>
 
       <div class="collapse navbar-collapse" id="leetcodeNavbar">
-        <ul class="navbar-nav me-auto mb-2 mb-xl-0 ms-xl-3">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-2 ms-xl-3">
           <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'quiz:index' %}">
               <i class="fas fa-fire me-1" style="color: var(--lc-amber);"></i> Daily
@@ -75,7 +75,7 @@
         </ul>
 
         <!-- Mobile Divider Line -->
-        <div class="nav-mobile-divider d-xl-none"></div>
+        <div class="nav-mobile-divider d-lg-none"></div>
 
         <!-- Navbar Controls & Action Badges -->
         <div class="navbar-actions-group">
