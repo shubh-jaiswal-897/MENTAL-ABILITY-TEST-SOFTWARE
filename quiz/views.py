@@ -15,7 +15,8 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
 
 def _evaluate_test_answers(answers):
@@ -130,13 +131,15 @@ def get_daily_challenge_question():
     """
     Deterministically selects today's Daily Challenge question based on UTC/local calendar day.
     Automatically rotates to a fresh question every 24 hours at midnight.
+    Optimized to use database count and slice to avoid pulling thousands of rows into memory.
     """
     today = timezone.now().date()
     day_seed = today.year * 10000 + today.timetuple().tm_yday
-    questions = list(Question.objects.select_related('subject').all().order_by('id'))
-    if not questions:
+    count = Question.objects.count()
+    if count == 0:
         return None
-    return questions[day_seed % len(questions)]
+    offset = day_seed % count
+    return Question.objects.select_related('subject').order_by('id')[offset]
 
 
 def index(request):
@@ -144,7 +147,12 @@ def index(request):
     profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
     daily_question = get_daily_challenge_question()
 
-    subjects = Subject.objects.annotate(q_count=Count('questions'))
+    subjects = Subject.objects.annotate(
+        q_count=Count('questions'),
+        easy_count=Count('questions', filter=Q(questions__difficulty='EASY')),
+        med_count=Count('questions', filter=Q(questions__difficulty='MEDIUM')),
+        hard_count=Count('questions', filter=Q(questions__difficulty='HARD'))
+    ).order_by('name')
     total_questions = Question.objects.count()
 
     context = {
@@ -152,17 +160,16 @@ def index(request):
         'daily_question': daily_question,
         'subjects': subjects,
         'total_questions': total_questions,
+        'total_subjects': subjects.count(),
     }
     return render(request, 'home.html', context)
 
 
 def revision(request):
-    """Show all questions for revision/study with difficulty filter."""
-    from django.db.models import Q
+    """Show all questions for revision/study with difficulty filter and fast pagination."""
+    qs = Question.objects.select_related('subject').prefetch_related('choices').all().order_by('id')
 
-    qs = Question.objects.select_related('subject').prefetch_related('choices').all()
-
-    subjects = Subject.objects.all()
+    subjects = Subject.objects.all().order_by('name')
     subject_id = request.GET.get('subject')
     if subject_id:
         try:
@@ -178,10 +185,22 @@ def revision(request):
     if search_q:
         qs = qs.filter(text__icontains=search_q)
 
+    total_filtered = qs.count()
+
+    # Fast pagination: 20 questions per page so responses are lightweight (<40KB) and instant on live Vercel
+    paginator = Paginator(qs, 20)
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.get_page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.get_page(1)
+
     profile = get_or_create_user_profile(request.user) if request.user.is_authenticated else None
 
     return render(request, 'quiz/revision.html', {
-        'questions': qs,
+        'questions': page_obj,
+        'page_obj': page_obj,
+        'total_filtered': total_filtered,
         'subjects': subjects,
         'selected_subject': subject_id,
         'selected_difficulty': difficulty,
