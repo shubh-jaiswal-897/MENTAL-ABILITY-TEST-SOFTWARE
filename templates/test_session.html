@@ -30,53 +30,28 @@
           <input type="hidden" name="action" value="start">
           
           <div class="mb-4">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-              <label class="form-label fw-bold mb-0" style="color: var(--lc-text);">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label for="subjects" class="form-label fw-bold mb-0" style="color: var(--lc-text);">
                 <i class="fas fa-layer-group me-1" style="color: var(--lc-amber);"></i> Select Subjects
-                <span id="subjectCountBadge" class="badge rounded-pill ms-2 font-monospace" style="background-color: var(--lc-surface-hover); color: var(--lc-amber); border: 1px solid var(--lc-border-highlight);">
-                  All Selected
-                </span>
               </label>
-
-              <!-- Quick Action Buttons: Select All / Clear All -->
               <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 font-monospace" style="font-size: 0.76rem;" onclick="selectAllSubjects(true)">
-                  <i class="fas fa-check-double me-1 text-success"></i> Select All
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none font-monospace" style="font-size: 0.8rem; color: var(--lc-blue);" onclick="toggleAllSubjects(true)">
+                  <i class="fas fa-check-double me-1"></i>Select All
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 font-monospace" style="font-size: 0.76rem;" onclick="selectAllSubjects(false)">
-                  <i class="fas fa-times me-1 text-danger"></i> Clear All
+                <span class="text-muted" style="font-size: 0.8rem;">|</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none font-monospace" style="font-size: 0.8rem; color: var(--lc-text-muted);" onclick="toggleAllSubjects(false)">
+                  <i class="fas fa-times me-1"></i>Clear
                 </button>
               </div>
             </div>
 
-            <!-- Subject Live Search Filter -->
-            <div class="input-group input-group-sm mb-2">
-              <span class="input-group-text border-end-0" style="background-color: var(--lc-surface); color: var(--lc-text-muted); border-color: var(--lc-border-highlight);">
-                <i class="fas fa-search"></i>
-              </span>
-              <input type="text" id="subjectSearchInput" class="form-control border-start-0 ps-1" placeholder="Quick search subject (e.g. Mathematics, AI, UPSC)..." style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);" oninput="filterSubjectChips(this.value)">
-            </div>
-
-            <!-- Touch-Friendly Subjects Grid Container -->
-            <div id="subjectsContainer" class="subjects-chip-grid rounded" style="background-color: var(--lc-surface); border: 1px solid var(--lc-border-highlight);">
+            <select id="subjects" name="subjects" class="form-select p-3" multiple required style="min-height: 190px; background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
               {% for s in subjects %}
-                <label class="subject-chip-item active" data-subject-name="{{ s.name|lower }}">
-                  <input type="checkbox" name="subjects" value="{{ s.id }}" checked class="subject-checkbox d-none" onchange="updateChipState(this)">
-                  <span class="chip-content">
-                    <i class="fas fa-check-circle chip-check-icon me-1 text-success"></i>
-                    <span class="chip-text">{{ s.name }}</span>
-                  </span>
-                </label>
+                <option value="{{ s.id }}" class="py-1">&bull; {{ s.name }}</option>
               {% endfor %}
-            </div>
-
-            <div class="d-flex flex-wrap align-items-center justify-content-between mt-2 gap-2">
-              <small class="form-text text-muted mb-0">
-                <i class="fas fa-hand-pointer me-1 text-warning"></i> Tap any subject to select/deselect. Use <strong>Clear All</strong> to pick single subject easily.
-              </small>
-              <small id="selectionWarning" class="text-danger fw-bold d-none">
-                <i class="fas fa-exclamation-circle me-1"></i> Please select at least 1 subject!
-              </small>
+            </select>
+            <div class="form-text small mt-1" style="color: var(--lc-text-muted);">
+              <i class="fas fa-info-circle me-1"></i> Tap to select a subject. Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects.
             </div>
           </div>
 
@@ -178,75 +153,25 @@
 {% block extra_js %}
 {% if not question %}
 <script>
-  function updateChipState(checkbox) {
-    const label = checkbox.closest('.subject-chip-item');
-    if (checkbox.checked) {
-      label.classList.add('active');
-    } else {
-      label.classList.remove('active');
-    }
-    updateSelectedCount();
-  }
-
-  function selectAllSubjects(selectAll) {
-    const checkboxes = document.querySelectorAll('.subject-checkbox');
-    checkboxes.forEach(cb => {
-      cb.checked = selectAll;
-      const label = cb.closest('.subject-chip-item');
-      if (label) {
-        if (selectAll) label.classList.add('active');
-        else label.classList.remove('active');
-      }
-    });
-    updateSelectedCount();
-  }
-
-  function updateSelectedCount() {
-    const total = document.querySelectorAll('.subject-checkbox').length;
-    const checked = document.querySelectorAll('.subject-checkbox:checked').length;
-    const badge = document.getElementById('subjectCountBadge');
-    const warn = document.getElementById('selectionWarning');
-    if (badge) {
-      if (checked === total) {
-        badge.textContent = `All (${total}) Selected`;
-        badge.style.color = 'var(--lc-amber)';
-      } else if (checked === 0) {
-        badge.textContent = `None Selected`;
-        badge.style.color = 'var(--lc-hard)';
-      } else {
-        badge.textContent = `${checked} of ${total} Selected`;
-        badge.style.color = 'var(--lc-blue)';
-      }
-    }
-    if (warn) {
-      if (checked > 0) warn.classList.add('d-none');
+  function toggleAllSubjects(selectAll) {
+    const sel = document.getElementById('subjects');
+    if (!sel) return;
+    for (let i = 0; i < sel.options.length; i++) {
+      sel.options[i].selected = selectAll;
     }
   }
 
-  function filterSubjectChips(query) {
-    const q = (query || '').trim().toLowerCase();
-    const chips = document.querySelectorAll('.subject-chip-item');
-    chips.forEach(chip => {
-      const name = chip.getAttribute('data-subject-name') || '';
-      if (!q || name.includes(q)) {
-        chip.style.display = 'inline-flex';
-      } else {
-        chip.style.display = 'none';
-      }
-    });
-  }
-
+  // Mobile Touch Fix: On touch screens, touching an option toggles that option cleanly without selecting all
   document.addEventListener('DOMContentLoaded', function() {
-    updateSelectedCount();
-    const form = document.getElementById('sessionSetupForm');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        const checked = document.querySelectorAll('.subject-checkbox:checked');
-        if (checked.length === 0) {
-          e.preventDefault();
-          const warn = document.getElementById('selectionWarning');
-          if (warn) warn.classList.remove('d-none');
-          alert('Please select at least one subject to start the quiz arena.');
+    const sel = document.getElementById('subjects');
+    if (sel) {
+      sel.addEventListener('mousedown', function(e) {
+        if (e.target && e.target.tagName === 'OPTION') {
+          if (window.innerWidth < 992 || ('ontouchstart' in window)) {
+            e.preventDefault();
+            e.target.selected = !e.target.selected;
+            sel.dispatchEvent(new Event('change'));
+          }
         }
       });
     }
