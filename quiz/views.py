@@ -335,6 +335,109 @@ def _finish_test_session(request, start_ts, qs):
     return redirect('quiz:test_result')
 
 
+def get_mixed_exam_questions(subject_ids, limit_val=10, difficulty_filter='MIXED'):
+    """
+    Selects a balanced, fair mix of questions across all selected subjects
+    and across mixed difficulty levels (EASY, MEDIUM, HARD).
+    Guarantees:
+      1. Every selected subject receives a fair share of questions.
+      2. If multiple subjects are selected, questions are sampled from all of them.
+      3. Questions are distributed across difficulty levels (Easy, Medium, Hard).
+      4. Interleaved/shuffled order during the exam.
+    """
+    clean_subs = []
+    for s in subject_ids:
+        try:
+            clean_subs.append(int(s))
+        except (ValueError, TypeError):
+            continue
+
+    if not clean_subs or limit_val <= 0:
+        return []
+
+    num_subs = len(clean_subs)
+    difficulties = [Question.EASY, Question.MEDIUM, Question.HARD]
+
+    # Check if a specific single difficulty was selected, or MIXED
+    if difficulty_filter in difficulties:
+        target_diffs = [difficulty_filter]
+    else:
+        target_diffs = list(difficulties)
+
+    # Step 1: Fair allocation per subject
+    if limit_val <= num_subs:
+        # User selected more subjects than requested questions: pick distinct subjects
+        chosen_subs = random.sample(clean_subs, limit_val)
+        allocations = {s_id: 1 for s_id in chosen_subs}
+    else:
+        # Distribute question slots across all selected subjects
+        base_per_sub = limit_val // num_subs
+        extra = limit_val % num_subs
+        shuffled_subs = list(clean_subs)
+        random.shuffle(shuffled_subs)
+        allocations = {s_id: base_per_sub + (1 if i < extra else 0) for i, s_id in enumerate(shuffled_subs)}
+
+    selected_ids = []
+    diff_cycle = list(target_diffs)
+    random.shuffle(diff_cycle)
+    diff_index = 0
+
+    # Step 2: Sample questions per subject across difficulties
+    for s_id, count in allocations.items():
+        if count <= 0:
+            continue
+        sub_selected = []
+        if len(target_diffs) > 1 and count >= 3:
+            # Multi-level split for subjects with >= 3 questions
+            sub_base = count // 3
+            sub_extra = count % 3
+            sub_diff_order = random.sample(target_diffs, len(target_diffs))
+            sub_diff_alloc = {d: sub_base + (1 if j < sub_extra else 0) for j, d in enumerate(sub_diff_order)}
+            for d, d_count in sub_diff_alloc.items():
+                if d_count <= 0:
+                    continue
+                pool = list(Question.objects.filter(subject_id=s_id, difficulty=d).exclude(id__in=selected_ids + sub_selected).values_list('id', flat=True))
+                if pool:
+                    sample_size = min(len(pool), d_count)
+                    sub_selected.extend(random.sample(pool, sample_size))
+        else:
+            # Cycle through target difficulties (Easy -> Medium -> Hard)
+            for _ in range(count):
+                target_d = diff_cycle[diff_index % len(diff_cycle)]
+                diff_index += 1
+                pool = list(Question.objects.filter(subject_id=s_id, difficulty=target_d).exclude(id__in=selected_ids + sub_selected).values_list('id', flat=True))
+                if pool:
+                    sub_selected.append(random.choice(pool))
+
+        # Fallback if specific difficulty pool was exhausted for this subject
+        if len(sub_selected) < count:
+            shortfall = count - len(sub_selected)
+            fallback_qs = Question.objects.filter(subject_id=s_id)
+            if difficulty_filter in difficulties:
+                fallback_qs = fallback_qs.filter(difficulty=difficulty_filter)
+            fallback_pool = list(fallback_qs.exclude(id__in=selected_ids + sub_selected).values_list('id', flat=True))
+            if fallback_pool:
+                sample_size = min(len(fallback_pool), shortfall)
+                sub_selected.extend(random.sample(fallback_pool, sample_size))
+
+        selected_ids.extend(sub_selected)
+
+    # Step 3: Global shortfall check (if any subject didn't have enough questions)
+    if len(selected_ids) < limit_val:
+        shortfall = limit_val - len(selected_ids)
+        general_qs = Question.objects.filter(subject_id__in=clean_subs)
+        if difficulty_filter in difficulties:
+            general_qs = general_qs.filter(difficulty=difficulty_filter)
+        general_pool = list(general_qs.exclude(id__in=selected_ids).values_list('id', flat=True))
+        if general_pool:
+            sample_size = min(len(general_pool), shortfall)
+            selected_ids.extend(random.sample(general_pool, sample_size))
+
+    # Step 4: Final shuffle so subjects and difficulties are interleaved during the exam
+    random.shuffle(selected_ids)
+    return selected_ids
+
+
 @login_required
 def test_session(request):
     """
@@ -346,26 +449,33 @@ def test_session(request):
     if 'action' in request.GET and request.GET['action'] == 'start':
         subject_ids = request.GET.getlist('subjects')
         limit = request.GET.get('limit')
+        difficulty = request.GET.get('difficulty', 'MIXED')
+
         if not subject_ids:
             return render(request, 'test_session.html', {
                 'error': 'Please select at least one subject.',
                 'subjects': Subject.objects.all(),
                 'profile': profile,
             })
-        qs_qs = Question.objects.filter(subject_id__in=subject_ids)
-        qs_ids = list(qs_qs.values_list('id', flat=True))
 
         try:
             limit_val = int(limit)
-            if limit_val > 0:
-                qs_ids = qs_ids[:limit_val]
+            if limit_val <= 0:
+                limit_val = 10
+            elif limit_val > 50:
+                limit_val = 50
         except Exception:
-            qs_ids = qs_ids[:10]
+            limit_val = 10
+
+        qs_ids = get_mixed_exam_questions(subject_ids, limit_val=limit_val, difficulty_filter=difficulty)
 
         if not qs_ids:
-            return render(request, 'test_session.html', {'error': 'No questions available.', 'profile': profile})
+            return render(request, 'test_session.html', {
+                'error': 'No questions available for the selected subjects & criteria.',
+                'subjects': Subject.objects.all(),
+                'profile': profile
+            })
 
-        random.shuffle(qs_ids)
         request.session['test_qs'] = qs_ids
         request.session['test_subjects'] = ','.join([str(s) for s in subject_ids])
         request.session['test_index'] = 0

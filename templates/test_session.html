@@ -55,11 +55,24 @@
             </div>
           </div>
 
-          <div class="mb-4">
-            <label for="limit" class="form-label fw-bold mb-1" style="color: var(--lc-text);">
-              <i class="fas fa-list-ol me-1" style="color: var(--lc-blue);"></i> Number of Questions
-            </label>
-            <input id="limit" name="limit" type="number" min="1" max="50" class="form-control p-2 font-monospace" value="10" placeholder="10" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="difficulty" class="form-label fw-bold mb-1" style="color: var(--lc-text);">
+                <i class="fas fa-layer-group me-1" style="color: var(--lc-amber);"></i> Question Level
+              </label>
+              <select id="difficulty" name="difficulty" class="form-select p-2 font-monospace" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+                <option value="MIXED" selected>⚡ Mixed Levels (Easy, Medium & Hard)</option>
+                <option value="EASY">🟢 Easy Only</option>
+                <option value="MEDIUM">🟡 Medium Only</option>
+                <option value="HARD">🔴 Hard Only</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="limit" class="form-label fw-bold mb-1" style="color: var(--lc-text);">
+                <i class="fas fa-list-ol me-1" style="color: var(--lc-blue);"></i> Number of Questions
+              </label>
+              <input id="limit" name="limit" type="number" min="1" max="50" class="form-control p-2 font-monospace" value="10" placeholder="10" style="background-color: var(--lc-surface); color: var(--lc-text); border-color: var(--lc-border-highlight);">
+            </div>
           </div>
 
           <button class="btn btn-lc-primary w-100 py-3 font-monospace fw-bold" type="submit">
